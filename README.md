@@ -4,10 +4,8 @@ Bring your **Logitech T630 Ultrathin Touch Mouse** back to life on modern macOSâ
 
 **LogiSwipe** is a lightweight menu bar app that restores 2-finger desktop swipes and lets you customize clicks, gestures, scroll direction, and pointer speed specifically for your T630.
 
-<p>
-  <img src="https://secure.logitech.com/assets/49924/2/ultrathin-touch-mouse-t630.jpg" alt="Logitech Ultrathin Touch Mouse T630" width="45%">
-  <img src="https://secure.logitech.com/assets/49924/4/ultrathin-touch-mouse-t630.jpg" alt="Logitech Ultrathin Touch Mouse T630" width="45%">
-</p>
+![Logitech Ultrathin Touch Mouse T630](https://secure.logitech.com/assets/49924/2/ultrathin-touch-mouse-t630.jpg)
+![Logitech Ultrathin Touch Mouse T630](https://secure.logitech.com/assets/49924/4/ultrathin-touch-mouse-t630.jpg)
 
 Mouse specs: [Logitech Ultrathin Touch Mouse T630 Technical Specifications](https://support.logi.com/hc/th/articles/360023466613-Logitech-Ultrathin-Touch-Mouse-T630-Technical-Specifications)
 
