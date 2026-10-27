@@ -1,30 +1,28 @@
-// logiswipe — turn Logi Options' 2-finger swipe (which macOS 27 ignores)
-// into Ctrl+← / Ctrl+→ so it switches desktops again.
+// logiswipe — 2-finger swipe on the Logitech T630 switches desktops again,
+// without Logi Options.
 //
-// Logi Options still posts dock-swipe events (CGEvent type 30, gesture 23),
-// but macOS drops them because they don't come from real hardware. We watch
-// those events and, when the swipe ends, press the Mission Control shortcut
-// for the direction the swipe reached furthest (back-and-forth is ignored).
+// The T630 reports raw finger positions in its HID input report 2. We read
+// them directly and, as soon as 2 fingers have travelled far enough sideways, press
+// Ctrl+← / Ctrl+→ once for that touch (anything after that, until you lift, is ignored).
+//
+// Report 2 layout (byte 0 is the report ID):
+//   [8]   finger bitmask (bit 0 = finger 1, bit 1 = finger 2); 0 when nothing touches
+//   [9…]  4 bytes per finger present, in bit order: X, Y, ?, ?   (X runs about 0–76)
 //
 // Run:    swift logiswipe.swift [seconds]
 //   seconds    stop automatically after this long (for testing); default: run until Ctrl+C.
-// Needs Accessibility permission for the app you run it from (to press keys).
+// Needs Input Monitoring (to read the mouse) and Accessibility (to press keys)
+// for the app you run it from.
 import AppKit
-import CoreGraphics
+import IOKit.hid
 
 let args = CommandLine.arguments
 let duration = Double(args.count > 1 ? args[1] : "0") ?? 0
 
-let typeDockSwipe: UInt32 = 30
-let fieldSourcePid = CGEventField(rawValue: 41)!
-let fieldGestureType = CGEventField(rawValue: 110)!  // 23 = dock swipe
-let fieldSwipeAxis = CGEventField(rawValue: 123)!    // 1 = horizontal
-let fieldProgress = CGEventField(rawValue: 124)!
-let fieldPhase = CGEventField(rawValue: 132)!        // 1 began, 2 changed, 4 ended, 8 cancelled
+let vendorLogitech = 0x046D, productT630 = 0xB00D
+let minDistance = 15.0  // how far (in X units) the fingers must travel to count as a swipe
 
 let keyLeft: CGKeyCode = 123, keyRight: CGKeyCode = 124
-var gTap: CFMachPort?
-var gPeak = 0.0  // furthest progress reached in the current swipe
 
 func log(_ s: String) {
     let ts = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
@@ -43,46 +41,68 @@ func pressCtrl(_ key: CGKeyCode) {
     }
 }
 
-let callback: CGEventTapCallBack = { _, type, event, _ in
-    if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-        if let tap = gTap { CGEvent.tapEnable(tap: tap, enable: true) }
-        return Unmanaged.passUnretained(event)
-    }
-    // Only synthetic horizontal dock swipes (real trackpad ones have pid 0 and still work).
-    guard type.rawValue == typeDockSwipe,
-          event.getIntegerValueField(fieldSourcePid) != 0,
-          event.getIntegerValueField(fieldGestureType) == 23,
-          event.getIntegerValueField(fieldSwipeAxis) == 1
-    else { return Unmanaged.passUnretained(event) }
+// Current touch.
+var lastX: [Int: Int] = [:]  // finger slot → X in the previous report
+var travel = 0.0             // average X movement of the fingers since the touch began
+var maxFingers = 0
+var fired = false            // already switched desktop during this touch
 
-    let phase = event.getIntegerValueField(fieldPhase)
-    let progress = event.getDoubleValueField(fieldProgress)
-    if phase == 1 { gPeak = 0 }
-    if abs(progress) > abs(gPeak) { gPeak = progress }
-    if phase == 8 { gPeak = 0 }
-    guard phase == 4 else { return Unmanaged.passUnretained(event) }
-
-    if gPeak < 0 {
-        log(String(format: "swipe left  (%.2f) → Ctrl+→", gPeak))
-        pressCtrl(keyRight)
-    } else if gPeak > 0 {
-        log(String(format: "swipe right (%.2f) → Ctrl+←", gPeak))
-        pressCtrl(keyLeft)
+func handleReport(_ r: UnsafeMutablePointer<UInt8>, _ len: Int) {
+    guard len > 8, r[0] == 2 else { return }
+    let mask = Int(r[8])
+    var x: [Int: Int] = [:]
+    var offset = 9
+    for slot in 0..<8 where mask & (1 << slot) != 0 && offset < len {
+        x[slot] = Int(r[offset])
+        offset += 4
     }
-    gPeak = 0
-    return Unmanaged.passUnretained(event)
+
+    if !x.isEmpty {
+        // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
+        let moved = x.compactMap { slot, v in lastX[slot].map { Double(v - $0) } }
+        if !moved.isEmpty { travel += moved.reduce(0, +) / Double(moved.count) }
+        maxFingers = max(maxFingers, x.count)
+        lastX = x
+        // 1 finger is scrolling, so only a touch that has had 2 fingers counts.
+        if !fired && maxFingers >= 2 && abs(travel) >= minDistance {
+            fired = true
+            if travel < 0 {
+                log(String(format: "swipe left  (%.0f) → Ctrl+→", travel))
+                pressCtrl(keyRight)
+            } else {
+                log(String(format: "swipe right (%.0f) → Ctrl+←", travel))
+                pressCtrl(keyLeft)
+            }
+        }
+        return
+    }
+
+    guard !lastX.isEmpty else { return }  // no touch in progress
+    if !fired && maxFingers >= 2 {
+        log(String(format: "swipe too short (%.0f), ignored", travel))
+    }
+    lastX = [:]; travel = 0; maxFingers = 0; fired = false
 }
 
-guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEventTap,
-                                  options: .listenOnly,
-                                  eventsOfInterest: CGEventMask(1) << typeDockSwipe,
-                                  callback: callback, userInfo: nil) else {
-    print("ERROR: cannot create event tap — grant Input Monitoring/Accessibility to this terminal app")
+let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+IOHIDManagerSetDeviceMatching(manager, [kIOHIDVendorIDKey: vendorLogitech,
+                                        kIOHIDProductIDKey: productT630] as CFDictionary)
+IOHIDManagerRegisterDeviceMatchingCallback(manager, { _, _, _, device in
+    let size = max(IOHIDDeviceGetProperty(device, kIOHIDMaxInputReportSizeKey as CFString) as? Int ?? 64, 1)
+    let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)  // lives as long as the device
+    IOHIDDeviceRegisterInputReportCallback(device, buffer, size, { _, _, _, _, _, report, len in
+        handleReport(report, len)
+    }, nil)
+    log("T630 connected")
+}, nil)
+IOHIDManagerRegisterDeviceRemovalCallback(manager, { _, _, _, _ in log("T630 disconnected") }, nil)
+IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetCurrent(), CFRunLoopMode.defaultMode.rawValue)
+
+let result = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+guard result == kIOReturnSuccess else {
+    print(String(format: "ERROR: cannot open HID devices (0x%X) — grant Input Monitoring to this terminal app", result))
     exit(1)
 }
-gTap = tap
-CFRunLoopAddSource(CFRunLoopGetCurrent(), CFMachPortCreateRunLoopSource(nil, tap, 0), .commonModes)
-CGEvent.tapEnable(tap: tap, enable: true)
 log("logiswipe running. Ctrl+C to stop.")
 if duration > 0 {
     Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in exit(0) }
