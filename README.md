@@ -1,61 +1,79 @@
-# logitech-option-t630-custom
+# LogiSwipe for Logitech T630
 
-Restores 2-finger swipe between desktops for the **Logitech T630 Ultrathin Touch Mouse** on macOS 27.
+Bring your **Logitech T630 Ultrathin Touch Mouse** back to life on modern macOS—without needing Logi Options.
 
-![Logitech Ultrathin Touch Mouse T630](https://secure.logitech.com/assets/49924/2/ultrathin-touch-mouse-t630.jpg)
+**LogiSwipe** is a lightweight menu bar app that restores 2-finger desktop swipes and lets you customize clicks, gestures, scroll direction, and pointer speed specifically for your T630.
 
-Reference: [Logitech Ultrathin Touch Mouse T630 Technical Specifications](https://support.logi.com/hc/th/articles/360023466613-Logitech-Ultrathin-Touch-Mouse-T630-Technical-Specifications)
+<p>
+  <img src="https://secure.logitech.com/assets/49924/2/ultrathin-touch-mouse-t630.jpg" alt="Logitech Ultrathin Touch Mouse T630" width="45%">
+  <img src="https://secure.logitech.com/assets/49924/4/ultrathin-touch-mouse-t630.jpg" alt="Logitech Ultrathin Touch Mouse T630" width="45%">
+</p>
 
-## Problem
+Mouse specs: [Logitech Ultrathin Touch Mouse T630 Technical Specifications](https://support.logi.com/hc/th/articles/360023466613-Logitech-Ultrathin-Touch-Mouse-T630-Technical-Specifications)
 
-Since macOS 27, swiping left/right with 2 fingers on the T630 no longer switches desktops. Other Logi Options gestures still work.
+## Why LogiSwipe?
 
-Testing showed:
+Logitech discontinued **Logi Options**, and the newer **Logi Options+** does not support the T630. On macOS 27 and later, 2-finger swiping to switch desktops stopped working altogether.
 
-- Logi Options 10.26.49 (`LogiMgrDaemon`) still posts dock-swipe events (CGEvent type 30, gesture 23).
-- macOS ignores them because they are synthetic rather than coming from real hardware.
-- Patching the event fields to match the trackpad's events didn't help, and neither did re-posting them at the HID level.
-- Logi Options is discontinued, and Logi Options+ doesn't support the T630.
-- With Logi Options running, the mouse itself turns a 2-finger swipe into a button 4/5 press, but its HID filter driver keeps those from reaching macOS.
-- Without Logi Options (app, daemon and driver extension removed or disabled), the mouse no longer does that. It still reports the raw finger positions.
+LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only touches events from your T630, leaving your trackpad and other mice completely alone.
 
-## LogiSwipe
+## Features
 
-LogiSwipe is a menu bar app that reads the T630 directly, so Logi Options isn't needed. It only changes events that come from the T630. Other mice and the trackpad are left alone.
+- **2-Finger & 1-Finger Swipes**: Switch between desktops, go Back / Forward in browsers, or scroll sideways.
+- **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the center of the mouse), and Two-finger click.
+- **Separate Scroll Direction**: Reverse scrolling just for the T630 without flipping your Mac's trackpad.
+- **Custom Pointer Speed**: Set the T630's pointer speed independently—even faster than the maximum setting in macOS System Settings.
+- **Launch at Login**: Lives quietly in your menu bar and starts automatically when you log in.
 
-| Setting | What it does |
-|---|---|
-| Custom tracking speed | Pointer speed for the T630 only, on the same scale as System Settings → Mouse → Tracking speed (Fast = 3.0). The slider goes up to 6.0. The T630's hardware DPI can't be changed. |
-| Reverse scroll direction | Flips the Natural scrolling setting for the T630 only. |
-| Left / Right / Middle / Two-finger click | Left click, right click, middle click, Back (Cmd+[), Forward (Cmd+]), Mission Control, or nothing. |
-| Swipe with 1 / 2 fingers | Scroll sideways, switch desktops (Ctrl+←/→), Back / Forward, or nothing. |
-| Launch at login | Starts LogiSwipe when you log in. |
+## Installation
 
-How the clicks are told apart:
+### Before you start
+1. **Quit or uninstall Logi Options.**
+2. Turn off **Logitech Options HID Driver Extension** in **System Settings → General → Login Items & Extensions → Driver Extensions**.
+3. Make sure **Ctrl+←** and **Ctrl+→** are enabled in **System Settings → Keyboard → Keyboard Shortcuts → Mission Control** (used for switching desktops).
 
-- The mouse picks left or right from where you press.
-- The mouse has no middle button. LogiSwipe counts a press in the center of the surface (X 30–46 of about 0–76) as a middle click.
-- A press while 2 fingers touch the surface is a two-finger click.
+### Option A: Download from Releases (Recommended)
+1. Download the latest `LogiSwipe-<version>.zip` from the **Releases** page and unzip it.
+2. Move **LogiSwipe.app** to your `/Applications` folder.
+3. If macOS says the app cannot be opened, run this once in Terminal:
+   ```sh
+   xattr -cr /Applications/LogiSwipe.app
+   ```
 
-How swipes work:
-
-- A swipe fires as soon as the fingers have moved 15 units (about a fifth of the surface width) sideways, and mostly sideways rather than up/down. You don't have to lift your fingers first.
-- Each touch fires at most once. After that, moving back and forth does nothing until you lift your fingers.
-- When a swipe has an action other than "Scroll sideways", the sideways scrolling it would also cause is dropped.
-- Swiping left goes to the desktop on the right (or Forward), as on a trackpad.
-- Unlike the trackpad, the desktop doesn't follow your fingers while you swipe. The slide animation plays once the swipe is far enough.
-
-## Build and install
-
+### Option B: Build from Source
+If you have Xcode or the Command Line Tools installed:
 ```sh
 ./build.sh
 ```
+This builds and installs `/Applications/LogiSwipe.app`.
 
-This builds `LogiSwipe.app`, signs it ad hoc and installs it in `/Applications`. Because the signature changes on every build, macOS asks for the permissions below again after each rebuild. To sign with a code signing identity of your own instead, set `SIGN_IDENTITY`.
+### Grant Permissions
+1. Open **LogiSwipe**.
+2. Allow both permissions in **System Settings → Privacy & Security** (you can click the gear icons inside LogiSwipe to jump right to them):
+   - **Input Monitoring** (so LogiSwipe can detect your finger touches on the T630)
+   - **Accessibility** (so LogiSwipe can perform custom clicks, scrolls, and shortcuts)
+3. **Quit and reopen LogiSwipe** from the menu bar icon. Both permissions should now say **Allowed**.
 
-Requirements:
+## Settings
 
-- Logi Options **not** running. Its driver extension (Logitech Options HID Driver Extension) should be turned off under System Settings → General → Login Items & Extensions → Driver Extensions.
-- **Input Monitoring** for LogiSwipe, so it can read the mouse.
-- **Accessibility** for LogiSwipe, so it can change clicks and scrolls and press keys.
-- Ctrl+←/→ enabled under System Settings → Keyboard → Keyboard Shortcuts → Mission Control.
+Click the mouse icon in the menu bar. Settings only apply to the T630. Other mice and the trackpad are left alone.
+
+<img src="docs/settings.png" alt="LogiSwipe settings panel" width="360">
+
+| Setting | Options | Default |
+|---|---|---|
+| **Custom tracking speed** | `0.0` – `6.0` (macOS "Fast" is `3.0`) | Off (uses system speed) |
+| **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
+| **Left click** | Left click, Right click, Middle click, Back, Forward, Mission Control, Do nothing | Left click |
+| **Right click** | *(same as above)* | Right click |
+| **Middle click** (press center) | *(same as above)* | Middle click |
+| **Two-finger click** | *(same as above)* | Right click |
+| **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Scroll sideways |
+| **Swipe with 2 fingers** | *(same as above)* | Switch desktops |
+| **Launch at login** | On / Off | Off |
+
+## Tips & Troubleshooting
+
+- **How swipes feel**: Swiping left moves to the desktop on the right (just like a MacBook trackpad). Once your fingers slide about a fifth of the way across the surface, the desktop switches immediately—you don't need to lift your fingers first.
+- **T630 shows "Not connected"**: Move or click the mouse to wake it up, and check that it is connected in Bluetooth settings.
+- **Nothing works after rebuilding from source**: Because local builds use ad-hoc signing, macOS treats each build as a new app. Open **Input Monitoring** and **Accessibility** in System Settings, remove (`−`) LogiSwipe, add (`+`) it again, then quit and reopen LogiSwipe.

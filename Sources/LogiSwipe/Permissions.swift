@@ -2,7 +2,7 @@ import AppKit
 import IOKit.hid
 import os
 
-let log = Logger(subsystem: "com.lordgift.LogiSwipe", category: "main")
+let log = Logger(subsystem: "th.in.lordgift.LogiSwipe", category: "main")
 
 /// Live state of the two permissions LogiSwipe needs, for the settings panel.
 final class Permissions: ObservableObject {
