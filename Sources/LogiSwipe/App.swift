@@ -1,4 +1,4 @@
-import IOKit.hid
+import ServiceManagement
 import SwiftUI
 
 @main
@@ -7,7 +7,7 @@ struct LogiSwipeApp: App {
 
     var body: some Scene {
         MenuBarExtra("LogiSwipe", systemImage: "computermouse") {
-            StatusView(t630: .shared)
+            SettingsView(settings: .shared, t630: .shared, permissions: .shared)
         }
         .menuBarExtraStyle(.window)
     }
@@ -15,23 +15,98 @@ struct LogiSwipeApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        log.info("LogiSwipe started")
         // Ask for both permissions up front; the system shows its own prompts.
-        AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary)
-        IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+        Permissions.shared.request()
         T630.shared.start()
+        EventTap.shared.start()
     }
 }
 
-struct StatusView: View {
+struct SettingsView: View {
+    @ObservedObject var settings: Settings
     @ObservedObject var t630: T630
+    @ObservedObject var permissions: Permissions
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
         Form {
-            LabeledContent("T630", value: t630.connected ? "Connected" : "Not connected")
-            Button("Quit LogiSwipe") { NSApp.terminate(nil) }
+            Section {
+                Toggle("Enabled", isOn: $settings.enabled)
+                LabeledContent("T630", value: t630.connected ? "Connected" : "Not connected")
+                permissionRow("Input Monitoring", allowed: permissions.inputMonitoring, pane: "Privacy_ListenEvent")
+                permissionRow("Accessibility", allowed: permissions.accessibility, pane: "Privacy_Accessibility")
+                if !permissions.inputMonitoring || !permissions.accessibility {
+                    Text("Allow LogiSwipe under System Settings → Privacy & Security, then quit and reopen it.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Section("Pointer") {
+                Toggle("Custom tracking speed", isOn: $settings.customSpeed)
+                if settings.customSpeed {
+                    Slider(value: $settings.trackingSpeed, in: 0...6) {
+                        Text(String(format: "%.1f", settings.trackingSpeed))
+                    } minimumValueLabel: { Text("Slow") } maximumValueLabel: { Text("Fast") }
+                    Text("3.0 is Fast in System Settings.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Section("Scrolling") {
+                Toggle("Reverse scroll direction", isOn: $settings.reverseScrolling)
+                Text("Flips the Natural scrolling setting in System Settings, for the T630 only.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Clicks") {
+                clickPicker("Left click", $settings.leftClick)
+                clickPicker("Right click", $settings.rightClick)
+                clickPicker("Middle click", $settings.middleClick)
+                clickPicker("Two-finger click", $settings.twoFingerClick)
+            }
+            Section("Gestures") {
+                swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe)
+                swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe)
+            }
+            Section {
+                Toggle("Launch at login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, on in
+                        do {
+                            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                        } catch {
+                            launchAtLogin = SMAppService.mainApp.status == .enabled
+                        }
+                    }
+                Button("Quit LogiSwipe") { NSApp.terminate(nil) }
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 300)
+        .frame(width: 360)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Status plus a button that opens that list in System Settings → Privacy & Security.
+    private func permissionRow(_ title: String, allowed: Bool, pane: String) -> some View {
+        LabeledContent(title) {
+            HStack {
+                Text(allowed ? "Allowed" : "Not allowed")
+                Button {
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")!)
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(.borderless)
+                .help("Open \(title) in System Settings")
+            }
+        }
+    }
+
+    private func clickPicker(_ title: String, _ value: Binding<ClickAction>) -> some View {
+        Picker(title, selection: value) {
+            ForEach(ClickAction.allCases) { Text($0.title).tag($0) }
+        }
+    }
+
+    private func swipePicker(_ title: String, _ value: Binding<SwipeAction>) -> some View {
+        Picker(title, selection: value) {
+            ForEach(SwipeAction.allCases) { Text($0.title).tag($0) }
+        }
     }
 }

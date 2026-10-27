@@ -1,8 +1,7 @@
 import AppKit
 import IOKit.hid
 
-/// Reads the T630's touch surface straight from HID and turns 2-finger sideways swipes
-/// into desktop switches.
+/// Reads the T630's touch surface straight from HID and turns sideways swipes into actions.
 ///
 /// Input report 2 layout (byte 0 is the report ID):
 ///   [1]   buttons (bit 0 = left, bit 1 = right; the mouse picks the side from where you press)
@@ -14,11 +13,17 @@ final class T630: ObservableObject {
 
     /// How far (in X units) fingers must travel sideways to count as a swipe.
     static let swipeDistance = 15.0
+    /// Where a press counts as a middle click; the mouse itself reports it as a left click.
+    static let middleZone = 30...46
 
     @Published private(set) var connected = false
+    /// Sender IDs (CGEvent field 87) of the events the T630 produces.
+    private(set) var senderIDs: Set<Int64> = []
 
     // Current touch.
-    private var touchMaxFingers = 0   // most fingers seen since the touch began
+    private(set) var fingers = 0           // fingers on the surface now
+    private(set) var touchMaxFingers = 0   // most fingers seen since the touch began
+    private(set) var firstFingerX = -1     // -1 when nothing touches
     private var lastPosition: [Int: (x: Int, y: Int)] = [:]
     private var travelX = 0.0, travelY = 0.0
     private var swiped = false
@@ -37,7 +42,7 @@ final class T630: ObservableObject {
             IOHIDDeviceRegisterInputReportCallback(device, buffer, size, { _, _, _, _, _, report, length in
                 T630.shared.handle(report, length)
             }, nil)
-            T630.shared.connected = true
+            T630.shared.deviceConnected()
         }, nil)
         IOHIDManagerRegisterDeviceRemovalCallback(manager, { _, _, _, device in
             T630.shared.devices.remove(device)
@@ -48,9 +53,35 @@ final class T630: ObservableObject {
     }
 
     /// Needs Input Monitoring; keeps retrying until it is granted.
-    private func open() {
-        if IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone)) != kIOReturnSuccess {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.open() }
+    private func open(attempt: Int = 0) {
+        let result = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        if result == kIOReturnSuccess {
+            log.info("HID opened")
+            return
+        }
+        if attempt == 0 { log.error("HID open failed: \(String(format: "0x%X", result), privacy: .public), retrying") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.open(attempt: attempt + 1) }
+    }
+
+    private func deviceConnected() {
+        connected = true
+        // The event service shows up a moment after the HID device, and macOS applies the
+        // system tracking speed to it when it does.
+        for delay in [0.5, 2.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                self.senderIDs = Set(HIDService.all(vendor: Self.vendor, product: Self.product).map(\.registryID))
+                log.info("T630 connected, sender IDs \(self.senderIDs.map(String.init).joined(separator: ","), privacy: .public)")
+                self.applyTrackingSpeed()
+            }
+        }
+    }
+
+    func applyTrackingSpeed() {
+        let settings = Settings.shared
+        let system = UserDefaults.standard.object(forKey: "com.apple.mouse.scaling") as? Double ?? 1.0
+        let speed = settings.enabled && settings.customSpeed ? settings.trackingSpeed : system
+        for service in HIDService.all(vendor: Self.vendor, product: Self.product) {
+            service.set(kIOHIDMouseAccelerationType, NSNumber(value: Int(speed * 65536)))
         }
     }
 
@@ -64,6 +95,8 @@ final class T630: ObservableObject {
             position[slot] = (Int(r[offset]), Int(r[offset + 1]))
             offset += 4
         }
+        fingers = position.count
+        firstFingerX = position.keys.min().map { position[$0]!.x } ?? -1
 
         guard !position.isEmpty else {
             lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false
@@ -78,12 +111,18 @@ final class T630: ObservableObject {
         touchMaxFingers = max(touchMaxFingers, position.count)
         lastPosition = position
 
-        // One switch per touch, as soon as it is far enough and mostly sideways.
-        // 1 finger is scrolling, so only a touch that has had 2 fingers counts.
-        guard !swiped, !buttonsDown, touchMaxFingers >= 2,
+        // One action per touch, as soon as it is far enough and mostly sideways.
+        let settings = Settings.shared
+        guard settings.enabled, !swiped, !buttonsDown,
               abs(travelX) >= Self.swipeDistance, abs(travelX) > 2 * abs(travelY)
         else { return }
         swiped = true
-        Actions.switchDesktop(fingersMovedLeft: travelX < 0)
+        let action = touchMaxFingers >= 2 ? settings.twoFingerSwipe : settings.oneFingerSwipe
+        log.info("swipe: \(self.touchMaxFingers, privacy: .public) fingers, x \(self.travelX, privacy: .public), y \(self.travelY, privacy: .public) → \(action.rawValue, privacy: .public)")
+        Actions.swipe(action, fingersMovedLeft: travelX < 0)
     }
+}
+
+enum ClickKind {
+    case left, right, middle, twoFinger
 }

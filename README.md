@@ -21,16 +21,28 @@ Testing showed:
 
 ## LogiSwipe
 
-LogiSwipe is a menu bar app that reads the T630's raw finger positions (HID input report 2) directly, so Logi Options isn't needed. As soon as 2 fingers have moved far enough sideways, it presses the Mission Control shortcut for that direction, without waiting for you to lift your fingers:
+LogiSwipe is a menu bar app that reads the T630 directly, so Logi Options isn't needed. It only changes events that come from the T630. Other mice and the trackpad are left alone.
 
-| Swipe | Key sent | Result |
-|---|---|---|
-| left | Ctrl+→ | desktop on the right |
-| right | Ctrl+← | desktop on the left |
+| Setting | What it does |
+|---|---|
+| Custom tracking speed | Pointer speed for the T630 only, on the same scale as System Settings → Mouse → Tracking speed (Fast = 3.0). The slider goes up to 6.0. The T630's hardware DPI can't be changed. |
+| Reverse scroll direction | Flips the Natural scrolling setting for the T630 only. |
+| Left / Right / Middle / Two-finger click | Left click, right click, middle click, Back (Cmd+[), Forward (Cmd+]), Mission Control, or nothing. |
+| Swipe with 1 / 2 fingers | Scroll sideways, switch desktops (Ctrl+←/→), Back / Forward, or nothing. |
+| Launch at login | Starts LogiSwipe when you log in. |
 
-- A swipe has to travel 15 units (about a fifth of the surface width) sideways, and mostly sideways rather than up/down.
-- Each touch switches at most once. After that, moving back and forth does nothing until you lift your fingers.
-- Touches with only 1 finger are ignored, since 1 finger scrolls.
+How the clicks are told apart:
+
+- The mouse picks left or right from where you press.
+- The mouse has no middle button. LogiSwipe counts a press in the center of the surface (X 30–46 of about 0–76) as a middle click.
+- A press while 2 fingers touch the surface is a two-finger click.
+
+How swipes work:
+
+- A swipe fires as soon as the fingers have moved 15 units (about a fifth of the surface width) sideways, and mostly sideways rather than up/down. You don't have to lift your fingers first.
+- Each touch fires at most once. After that, moving back and forth does nothing until you lift your fingers.
+- When a swipe has an action other than "Scroll sideways", the sideways scrolling it would also cause is dropped.
+- Swiping left goes to the desktop on the right (or Forward), as on a trackpad.
 - Unlike the trackpad, the desktop doesn't follow your fingers while you swipe. The slide animation plays once the swipe is far enough.
 
 ## Build and install
@@ -45,5 +57,5 @@ Requirements:
 
 - Logi Options **not** running. Its driver extension (Logitech Options HID Driver Extension) should be turned off under System Settings → General → Login Items & Extensions → Driver Extensions.
 - **Input Monitoring** for LogiSwipe, so it can read the mouse.
-- **Accessibility** for LogiSwipe, so it can press keys.
+- **Accessibility** for LogiSwipe, so it can change clicks and scrolls and press keys.
 - Ctrl+←/→ enabled under System Settings → Keyboard → Keyboard Shortcuts → Mission Control.
