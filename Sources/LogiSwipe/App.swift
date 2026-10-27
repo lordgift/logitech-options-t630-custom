@@ -29,58 +29,101 @@ struct SettingsView: View {
     @ObservedObject var permissions: Permissions
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
+    // Two columns, so the panel fits on screen without scrolling.
     var body: some View {
-        Form {
-            Section {
-                Toggle("Enabled", isOn: $settings.enabled)
-                LabeledContent("T630", value: t630.connected ? "Connected" : "Not connected")
-                permissionRow("Input Monitoring", allowed: permissions.inputMonitoring, pane: "Privacy_ListenEvent")
-                permissionRow("Accessibility", allowed: permissions.accessibility, pane: "Privacy_Accessibility")
-                if !permissions.inputMonitoring || !permissions.accessibility {
-                    Text("Allow LogiSwipe under System Settings → Privacy & Security, then quit and reopen it.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+        HStack(alignment: .top, spacing: 0) {
+            Form {
+                statusSection
+                pointerSection
+                scrollingSection
             }
-            Section("Pointer") {
-                Toggle("Custom tracking speed", isOn: $settings.customSpeed)
-                if settings.customSpeed {
-                    Slider(value: $settings.trackingSpeed, in: 0...6) {
-                        Text(String(format: "%.1f", settings.trackingSpeed))
-                    } minimumValueLabel: { Text("Slow") } maximumValueLabel: { Text("Fast") }
-                    Text("3.0 is Fast in System Settings.").font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            Section("Scrolling") {
-                Toggle("Reverse scroll direction", isOn: $settings.reverseScrolling)
-                Text("Flips the Natural scrolling setting in System Settings, for the T630 only.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("Clicks") {
-                clickPicker("Left click", $settings.leftClick)
-                clickPicker("Right click", $settings.rightClick)
-                clickPicker("Middle click", $settings.middleClick)
-                clickPicker("Two-finger click", $settings.twoFingerClick)
-            }
-            Section("Gestures") {
-                swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe)
-                swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe)
-            }
-            Section {
-                Toggle("Launch at login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, on in
-                        do {
-                            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-                        } catch {
-                            launchAtLogin = SMAppService.mainApp.status == .enabled
-                        }
-                    }
-                Button("Quit LogiSwipe") { NSApp.terminate(nil) }
+            Form {
+                clicksSection
+                gesturesSection
+                appSection
             }
         }
         .formStyle(.grouped)
-        .frame(width: 360)
+        .scrollDisabled(true)
+        .frame(width: 680)
         .fixedSize(horizontal: false, vertical: true)
     }
+
+    private var statusSection: some View {
+        Section {
+            Toggle("Enabled", isOn: $settings.enabled)
+            LabeledContent("T630", value: t630.connected ? "Connected" : "Not connected")
+            permissionRow("Input Monitoring", allowed: permissions.inputMonitoring, pane: "Privacy_ListenEvent")
+            permissionRow("Accessibility", allowed: permissions.accessibility, pane: "Privacy_Accessibility")
+            if !permissions.inputMonitoring || !permissions.accessibility {
+                Text("Allow LogiSwipe under System Settings → Privacy & Security, then quit and reopen it.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var pointerSection: some View {
+        Section("Pointer") {
+            Toggle("Custom tracking speed", isOn: $settings.customSpeed)
+            if settings.customSpeed {
+                Slider(value: $settings.trackingSpeed, in: 0...6) {
+                    Text(String(format: "%.1f", settings.trackingSpeed))
+                } minimumValueLabel: { Text("Slow") } maximumValueLabel: { Text("Fast") }
+                Text("3.0 is Fast in System Settings.").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var scrollingSection: some View {
+        Section("Scrolling") {
+            Toggle("Smooth scrolling", isOn: $settings.smoothScrolling)
+            if settings.smoothScrolling {
+                Slider(value: $settings.scrollSpeed, in: 0.25...3) {
+                    Text(String(format: "%.2g×", settings.scrollSpeed))
+                } minimumValueLabel: { Text("Slow") } maximumValueLabel: { Text("Fast") }
+            }
+            Toggle("Reverse scroll direction", isOn: $settings.reverseScrolling)
+            Text("Smooth scrolling follows your finger like a trackpad, with momentum.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var clicksSection: some View {
+        Section("Clicks") {
+            clickPicker("Left click", $settings.leftClick)
+            clickPicker("Right click", $settings.rightClick)
+            clickPicker("Middle click", $settings.middleClick)
+            clickPicker("Two-finger click", $settings.twoFingerClick)
+        }
+    }
+
+    private var gesturesSection: some View {
+        Section("Gestures") {
+            swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe)
+            swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe)
+        }
+    }
+
+    private var appSection: some View {
+        Section {
+            Toggle("Launch at login", isOn: $launchAtLogin)
+                .onChange(of: launchAtLogin) { _, on in
+                    do {
+                        if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                    } catch {
+                        launchAtLogin = SMAppService.mainApp.status == .enabled
+                    }
+                }
+            LabeledContent("Version", value: Self.version)
+            HStack {
+                Spacer()
+                Button("Quit LogiSwipe") { NSApp.terminate(nil) }
+            }
+        }
+    }
+
+    /// CFBundleShortVersionString from Info.plist.
+    private static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
 
     /// Status plus a button that opens that list in System Settings → Privacy & Security.
     private func permissionRow(_ title: String, allowed: Bool, pane: String) -> some View {

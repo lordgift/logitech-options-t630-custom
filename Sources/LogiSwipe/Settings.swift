@@ -41,8 +41,12 @@ final class Settings: ObservableObject {
     @Published var customSpeed: Bool { didSet { save(customSpeed, "customSpeed"); T630.shared.applyTrackingSpeed() } }
     /// Same scale as System Settings → Mouse → Tracking speed, where Fast is 3.
     @Published var trackingSpeed: Double { didSet { save(trackingSpeed, "trackingSpeed"); T630.shared.applyTrackingSpeed() } }
-    /// Flips the scroll direction macOS uses for mice, for the T630 only.
+    /// Flips the T630's scroll direction.
     @Published var reverseScrolling: Bool { didSet { save(reverseScrolling, "reverseScrolling") } }
+    /// Scroll from the finger position like a trackpad, instead of the mouse's coarse wheel steps.
+    @Published var smoothScrolling: Bool { didSet { save(smoothScrolling, "smoothScrolling") } }
+    /// Multiplier for smooth scrolling distance.
+    @Published var scrollSpeed: Double { didSet { save(scrollSpeed, "scrollSpeed") } }
     @Published var leftClick: ClickAction { didSet { save(leftClick.rawValue, "leftClick") } }
     @Published var rightClick: ClickAction { didSet { save(rightClick.rawValue, "rightClick") } }
     @Published var middleClick: ClickAction { didSet { save(middleClick.rawValue, "middleClick") } }
@@ -56,11 +60,15 @@ final class Settings: ObservableObject {
             "customSpeed": false,
             "trackingSpeed": defaults.object(forKey: "com.apple.mouse.scaling") as? Double ?? 1.0,
             "reverseScrolling": false,
+            "smoothScrolling": true,
+            "scrollSpeed": 1.0,
         ])
         enabled = defaults.bool(forKey: "enabled")
         customSpeed = defaults.bool(forKey: "customSpeed")
         trackingSpeed = defaults.double(forKey: "trackingSpeed")
         reverseScrolling = defaults.bool(forKey: "reverseScrolling")
+        smoothScrolling = defaults.bool(forKey: "smoothScrolling")
+        scrollSpeed = defaults.double(forKey: "scrollSpeed")
         leftClick = Self.load(defaults, "leftClick") ?? .left
         rightClick = Self.load(defaults, "rightClick") ?? .right
         middleClick = Self.load(defaults, "middleClick") ?? .middle

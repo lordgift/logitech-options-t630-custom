@@ -40,13 +40,14 @@ The T630 (`0x046D:0xB00D`) sends touch data on report ID `2`:
 
 ### 2. Click Classification (`T630.swift` & `EventTap.swift`)
 - **Two-finger click**: Any physical click (`leftMouseDown` or `rightMouseDown`) while `fingers >= 2`.
-- **Middle click**: The T630 has no physical middle button. A single-finger click where `firstFingerX` is within `T630.middleZone` (`30...46`) is classified as a middle click.
-- **Left / Right click**: Outside `middleZone` with `< 2` fingers, determined by the hardware button event.
+- **Middle click**: The T630 has no physical middle button. A single-finger click in the upper center (`firstFingerX` in `T630.middleZoneX` `30...55` and `firstFingerY <= T630.middleMaxY` `53`) is a middle click. Measured middle clicks land at X 34–48, Y 39–52; left and right clicks all land at Y ≥ 55. A press in the lower center can't be told from a left click.
+- **Left / Right click**: Decided from the finger position, not the hardware button bit: `firstFingerX >= T630.rightSideX` (`53`) is right, otherwise left. Measured left clicks land at X 6–43, right clicks at 62–76; the firmware sometimes reports a left (X 43) or middle press as right. Falls back to the hardware button when no finger position is known.
 - `heldAction` remembers the resolved `ClickAction` on `mouseDown` so subsequent `mouseDragged` and `mouseUp` events are remapped consistently.
 
 ### 3. Swipe Detection (`T630.swift`)
 - Finger deltas (`dx`, `dy`) are averaged across all fingers present in both the previous and current report while no button is held down (`!buttonsDown`).
-- Once `!swiped`, `abs(travelX) >= 15.0` (`swipeDistance`), and `abs(travelX) > abs(travelY) * 1.3`, a swipe triggers immediately without waiting for finger lift.
+- Once `!swiped`, `abs(travelX) >= 15.0` (`swipeDistance`), and `abs(travelX) > abs(travelY) * 1.5` (`swipeRatio`; 1-finger swipes drift upwards), a swipe triggers immediately without waiting for finger lift.
+- The second finger of a 2-finger swipe lands up to ~0.1 s after the first, so a touch only counts as a 1-finger swipe once it is `oneFingerDelay` (0.15 s) old. A 1-finger swipe set to "Scroll sideways" doesn't end the touch's swipe check, so a late second finger still triggers the 2-finger action.
 - Only one swipe fires per touch (`swiped = true` until `fingers == 0`).
 - When a swipe action (`desktops`, `backForward`, `none`) is configured for the active finger count (`touchMaxFingers`), `EventTap.scroll` zeroes out the horizontal scroll delta (`Axis2`) so the gesture does not also scroll the window underneath.
 

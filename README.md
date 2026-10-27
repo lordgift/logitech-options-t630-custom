@@ -22,7 +22,7 @@ LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only t
 ## Features
 
 - **2-Finger & 1-Finger Swipes**: Switch between desktops, go Back / Forward in browsers, or scroll sideways.
-- **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the center of the mouse), and Two-finger click.
+- **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the upper center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
 - **Separate Scroll Direction**: Reverse scrolling just for the T630 without flipping your Mac's trackpad.
 - **Custom Pointer Speed**: Set the T630's pointer speed independently—even faster than the maximum setting in macOS System Settings.
 - **Launch at Login**: Lives quietly in your menu bar and starts automatically when you log in.
@@ -68,7 +68,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
 | **Left click** | Left click, Right click, Middle click, Back, Forward, Mission Control, Do nothing | Left click |
 | **Right click** | *(same as above)* | Right click |
-| **Middle click** (press center) | *(same as above)* | Middle click |
+| **Middle click** (press the upper center) | *(same as above)* | Middle click |
 | **Two-finger click** | *(same as above)* | Right click |
 | **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Scroll sideways |
 | **Swipe with 2 fingers** | *(same as above)* | Switch desktops |

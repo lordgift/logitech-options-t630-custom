@@ -42,10 +42,15 @@ final class EventTap: ObservableObject {
         case .scrollWheel:
             return scroll(event)
         case .leftMouseDown, .rightMouseDown:
+            // Left or right from where the finger is, rather than the mouse's own guess;
+            // fall back to the mouse when no finger position is known.
+            let x = t630.firstFingerX, y = t630.firstFingerY
             let kind: ClickKind = t630.fingers >= 2 ? .twoFinger
-                : T630.middleZone.contains(t630.firstFingerX) ? .middle
+                : T630.middleZoneX.contains(x) && y >= 0 && y <= T630.middleMaxY ? .middle
+                : x >= 0 ? (x >= T630.rightSideX ? .right : .left)
                 : type == .rightMouseDown ? .right : .left
             let action = settings.clickAction(for: kind)
+            log.info("click: \(String(describing: kind), privacy: .public) at \(x, privacy: .public),\(y, privacy: .public), \(t630.fingers, privacy: .public) fingers → \(action.rawValue, privacy: .public)")
             heldAction = action
             return remap(event, to: action, phase: 0)
         case .leftMouseDragged, .rightMouseDragged:
@@ -78,6 +83,8 @@ final class EventTap: ObservableObject {
 
     private func scroll(_ event: CGEvent) -> CGEvent? {
         let settings = Settings.shared, t630 = T630.shared
+        // SmoothScroller posts its own scrolling from the finger position instead.
+        if settings.smoothScrolling { return nil }
         // Each axis is carried three ways: line delta and point delta (integers), fixed-point delta.
         let vertical: (Int, Double, Int) = (Int(event.getIntegerValueField(.scrollWheelEventDeltaAxis1)),
                                             event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1),
