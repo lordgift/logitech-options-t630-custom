@@ -60,7 +60,7 @@ This builds and installs `/Applications/LogiSwipe.app`.
 
 Click the mouse icon in the menu bar. Settings only apply to the T630. Other mice and the trackpad are left alone.
 
-<img src="docs/settings.png" alt="LogiSwipe settings panel" width="360">
+<img src="docs/settings.png" alt="LogiSwipe settings panel" width="680">
 
 | Setting | Options | Default |
 |---|---|---|
