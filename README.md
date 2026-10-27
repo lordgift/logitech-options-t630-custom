@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="LogiSwipe logo" width="128">
+</p>
+
 # LogiSwipe for Logitech T630
 
 Bring your **Logitech T630 Ultrathin Touch Mouse** back to life on modern macOS—without needing Logi Options.

@@ -25,9 +25,10 @@ APP="build/LogiSwipe.app"
 ZIP="build/LogiSwipe-${VERSION}.zip"
 
 rm -rf "$APP" "$ZIP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/LogiSwipe "$APP/Contents/MacOS/"
 cp "$PLIST" "$APP/Contents/"
+cp Support/AppIcon.icns "$APP/Contents/Resources/"
 
 echo "==> Signing $APP..."
 codesign --force --sign "${SIGN_IDENTITY:--}" "$APP"
