@@ -3,19 +3,17 @@
 //
 // Logi Options still posts dock-swipe events (CGEvent type 30, gesture 23),
 // but macOS drops them because they don't come from real hardware. We watch
-// those events and, when the swipe ends, press the Mission Control shortcut.
+// those events and, when the swipe ends, press the Mission Control shortcut
+// for the direction the swipe reached furthest (back-and-forth is ignored).
 //
-// Run:    swift logiswipe.swift [threshold] [seconds]
-//   threshold  how far (0–1) you must swipe before releasing; default 0.3.
-//              Pull back below it before lifting your fingers to cancel.
+// Run:    swift logiswipe.swift [seconds]
 //   seconds    stop automatically after this long (for testing); default: run until Ctrl+C.
 // Needs Accessibility permission for the app you run it from (to press keys).
 import AppKit
 import CoreGraphics
 
 let args = CommandLine.arguments
-let threshold = Double(args.count > 1 ? args[1] : "0.3") ?? 0.3
-let duration = Double(args.count > 2 ? args[2] : "0") ?? 0
+let duration = Double(args.count > 1 ? args[1] : "0") ?? 0
 
 let typeDockSwipe: UInt32 = 30
 let fieldSourcePid = CGEventField(rawValue: 41)!
@@ -26,6 +24,7 @@ let fieldPhase = CGEventField(rawValue: 132)!        // 1 began, 2 changed, 4 en
 
 let keyLeft: CGKeyCode = 123, keyRight: CGKeyCode = 124
 var gTap: CFMachPort?
+var gPeak = 0.0  // furthest progress reached in the current swipe
 
 func log(_ s: String) {
     let ts = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
@@ -53,20 +52,24 @@ let callback: CGEventTapCallBack = { _, type, event, _ in
     guard type.rawValue == typeDockSwipe,
           event.getIntegerValueField(fieldSourcePid) != 0,
           event.getIntegerValueField(fieldGestureType) == 23,
-          event.getIntegerValueField(fieldSwipeAxis) == 1,
-          event.getIntegerValueField(fieldPhase) == 4
+          event.getIntegerValueField(fieldSwipeAxis) == 1
     else { return Unmanaged.passUnretained(event) }
 
+    let phase = event.getIntegerValueField(fieldPhase)
     let progress = event.getDoubleValueField(fieldProgress)
-    if progress <= -threshold {
-        log(String(format: "swipe left  (%.2f) → Ctrl+→", progress))
+    if phase == 1 { gPeak = 0 }
+    if abs(progress) > abs(gPeak) { gPeak = progress }
+    if phase == 8 { gPeak = 0 }
+    guard phase == 4 else { return Unmanaged.passUnretained(event) }
+
+    if gPeak < 0 {
+        log(String(format: "swipe left  (%.2f) → Ctrl+→", gPeak))
         pressCtrl(keyRight)
-    } else if progress >= threshold {
-        log(String(format: "swipe right (%.2f) → Ctrl+←", progress))
+    } else if gPeak > 0 {
+        log(String(format: "swipe right (%.2f) → Ctrl+←", gPeak))
         pressCtrl(keyLeft)
-    } else {
-        log(String(format: "swipe too short (%.2f), ignored", progress))
     }
+    gPeak = 0
     return Unmanaged.passUnretained(event)
 }
 
@@ -80,7 +83,7 @@ guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .tailAppendEve
 gTap = tap
 CFRunLoopAddSource(CFRunLoopGetCurrent(), CFMachPortCreateRunLoopSource(nil, tap, 0), .commonModes)
 CGEvent.tapEnable(tap: tap, enable: true)
-log(String(format: "logiswipe running (threshold %.2f). Ctrl+C to stop.", threshold))
+log("logiswipe running. Ctrl+C to stop.")
 if duration > 0 {
     Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in exit(0) }
 }

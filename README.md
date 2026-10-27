@@ -22,16 +22,15 @@ Testing showed:
 | left | Ctrl+→ | desktop on the right |
 | right | Ctrl+← | desktop on the left |
 
-A swipe shorter than the threshold is ignored. To cancel a swipe, pull back before lifting your fingers.
+The direction is taken from the furthest point the swipe reached, so moving back and forth during a swipe doesn't matter.
 
 Unlike the trackpad, the desktop doesn't follow your fingers while you swipe. The slide animation plays after you release.
 
 ## Usage
 
 ```sh
-swift logiswipe.swift            # run until Ctrl+C, threshold 0.3
-swift logiswipe.swift 0.5        # require a longer swipe
-swift logiswipe.swift 0.3 90     # stop after 90 s (testing)
+swift logiswipe.swift            # run until Ctrl+C
+swift logiswipe.swift 90         # stop after 90 s (testing)
 ```
 
 Requirements:
