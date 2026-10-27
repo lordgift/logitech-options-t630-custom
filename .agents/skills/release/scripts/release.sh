@@ -31,7 +31,12 @@ cp "$PLIST" "$APP/Contents/"
 cp Support/AppIcon.icns "$APP/Contents/Resources/"
 
 echo "==> Signing $APP..."
-codesign --force --sign "${SIGN_IDENTITY:--}" "$APP"
+# Sign with the "LogiSwipe Self-Signed" identity when it is in the keychain, so macOS keeps the
+# Accessibility / Input Monitoring permissions across builds; otherwise ad hoc. SIGN_IDENTITY overrides.
+identities=$(security find-identity -p codesigning 2>/dev/null || true)
+[[ $identities == *'"LogiSwipe Self-Signed"'* ]] && identity="LogiSwipe Self-Signed" || identity=-
+identity=${SIGN_IDENTITY:-$identity}
+codesign --force --sign "$identity" "$APP"
 
 echo "==> Compressing to $ZIP..."
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"

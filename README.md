@@ -78,4 +78,4 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 
 - **How swipes feel**: Swiping left moves to the desktop on the right (just like a MacBook trackpad). Once your fingers slide about a fifth of the way across the surface, the desktop switches immediately—you don't need to lift your fingers first.
 - **T630 shows "Not connected"**: Move or click the mouse to wake it up, and check that it is connected in Bluetooth settings.
-- **Nothing works after rebuilding from source**: Because local builds use ad-hoc signing, macOS treats each build as a new app. Open **Input Monitoring** and **Accessibility** in System Settings, remove (`−`) LogiSwipe, add (`+`) it again, then quit and reopen LogiSwipe.
+- **Nothing works after rebuilding from source**: Without the maintainer's signing identity, local builds are signed ad hoc, so macOS treats each build as a new app. Open **Input Monitoring** and **Accessibility** in System Settings, remove (`−`) LogiSwipe, add (`+`) it again, then quit and reopen LogiSwipe.

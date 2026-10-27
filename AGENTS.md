@@ -17,7 +17,7 @@ This document describes the internal architecture, hardware protocol details, an
 
 - [`Package.swift`](Package.swift) — Swift Package Manager manifest (`macOS 14+`, executable target `LogiSwipe`).
 - [`Support/Info.plist`](Support/Info.plist) — App bundle metadata (`LSUIElement = true` for menu-bar-only app, version & build numbers).
-- [`build.sh`](build.sh) — Builds release binary, packages `build/LogiSwipe.app`, signs it (`SIGN_IDENTITY`, defaulting to ad-hoc `-`), and installs to `/Applications/LogiSwipe.app`.
+- [`build.sh`](build.sh) — Builds release binary, packages `build/LogiSwipe.app`, signs it (`SIGN_IDENTITY`, defaulting to the "LogiSwipe Self-Signed" keychain identity when present, else ad-hoc `-`), and installs to `/Applications/LogiSwipe.app`.
 - [`Sources/LogiSwipe/`](Sources/LogiSwipe/):
   - [`App.swift`](Sources/LogiSwipe/App.swift) — SwiftUI `MenuBarExtra` entry point (`LogiSwipeApp`), `AppDelegate`, and `SettingsView` UI.
   - [`T630.swift`](Sources/LogiSwipe/T630.swift) — Opens the T630 via `IOHIDManager`, parses HID Input Report 2 for finger positions/swipes, tracks sender IDs, and applies per-device tracking speed.
@@ -64,7 +64,7 @@ The T630 (`0x046D:0xB00D`) sends touch data on report ID `2`:
   ```sh
   ./build.sh
   ```
-  To persist TCC permissions across rebuilds, sign with a certificate identity instead of ad-hoc:
+  Signing uses the self-signed "LogiSwipe Self-Signed" identity in the login keychain when present. Its designated requirement pins that certificate (`certificate leaf = H"31d139e5…"`), so TCC permissions survive rebuilds and updates, for users too. It is not trusted by Gatekeeper, so downloads still need "Open Anyway" or `xattr -dr com.apple.quarantine`. Losing the key means everyone re-grants permissions once. Without it, signing falls back to ad-hoc, and macOS treats every build as a new app. Never sign with the company team `D82BAQ85JN`. To use another identity:
   ```sh
   SIGN_IDENTITY="Developer ID Application: ..." ./build.sh
   ```

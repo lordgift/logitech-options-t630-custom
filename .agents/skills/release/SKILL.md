@@ -26,7 +26,7 @@ What this script does:
 1. Updates `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`.
 2. Runs `swift build -c release`.
 3. Assembles `build/LogiSwipe.app` (`Contents/MacOS/LogiSwipe` and `Contents/Info.plist`).
-4. Signs `build/LogiSwipe.app` with `SIGN_IDENTITY` (defaults to ad-hoc `-`).
+4. Signs `build/LogiSwipe.app` with `SIGN_IDENTITY`, defaulting to the "LogiSwipe Self-Signed" keychain identity when present (so users keep their permissions across updates), else ad-hoc `-`. Never sign with the company team `D82BAQ85JN`.
 5. Compresses `build/LogiSwipe.app` into `build/LogiSwipe-<VERSION>.zip` using `ditto -c -k --keepParent` (preserves macOS bundle metadata and code signature).
 
 Verify that `build/LogiSwipe-<VERSION>.zip` exists and check its size.
