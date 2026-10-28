@@ -271,19 +271,26 @@ struct SettingsView: View {
             Toggle(name(action), isOn: Binding(get: { value.wrappedValue == action },
                                                set: { if $0 || action == .openApp { choose(action) } }))
         }
-        let edits = options.filter(\.isEdit)
+        // Mouse and macOS actions under headers, Edit as a submenu, then Open app and Do nothing.
+        let groups = ActionGroup.allCases.map { group in (group, options.filter { $0.group == group }) }
+            .filter { !$0.1.isEmpty }
         return LabeledContent(title) {
             Menu {
-                ForEach(options) { action in
-                    if !action.isEdit {
-                        item(action)
-                    } else if action == edits.first {
-                        Menu("Edit") { ForEach(edits) { item($0) } }
+                ForEach(groups, id: \.0) { group, actions in
+                    switch group {
+                    case .mouse, .navigate, .system:
+                        Section(group.title!) { ForEach(actions) { item($0) } }
+                    case .edit:
+                        Divider()
+                        Menu(group.title!) { ForEach(actions) { item($0) } }
+                    case .app:
+                        Divider()
+                        ForEach(actions) { item($0) }
+                        if app != nil { Button("Choose another app…") { choose(.openApp) } }
+                    case .none:
+                        Divider()
+                        ForEach(actions) { item($0) }
                     }
-                }
-                if app != nil && options.contains(.openApp) {
-                    Divider()
-                    Button("Choose another app…") { choose(.openApp) }
                 }
             } label: {
                 Text(name(value.wrappedValue))

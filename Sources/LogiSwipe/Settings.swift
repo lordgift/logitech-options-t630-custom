@@ -1,17 +1,27 @@
 import Foundation
 
-/// An action list with Cut / Copy / Paste (shown in an Edit submenu) and an action that opens
-/// an app the user picks, stored per setting in `Settings.apps`.
+/// An action list shown as a menu grouped by `ActionGroup`, with Cut / Copy / Paste in an Edit
+/// submenu and an action that opens an app the user picks, stored per setting in `Settings.apps`.
 protocol MenuAction: Hashable, Identifiable, CaseIterable {
-    static var cut: Self { get }
-    static var copy: Self { get }
-    static var paste: Self { get }
     static var openApp: Self { get }
     var title: String { get }
+    var group: ActionGroup { get }
 }
 
-extension MenuAction {
-    var isEdit: Bool { self == .cut || self == .copy || self == .paste }
+/// The groups of an action menu, in menu order.
+enum ActionGroup: CaseIterable {
+    case mouse, navigate, system, edit, app, none
+
+    /// Header of the group's section; nil for the groups shown without one.
+    var title: String? {
+        switch self {
+        case .mouse: "Click"
+        case .navigate: "Navigate"
+        case .system: "macOS"
+        case .edit: "Edit"
+        case .app, .none: nil
+        }
+    }
 }
 
 enum ClickAction: String, MenuAction {
@@ -22,6 +32,16 @@ enum ClickAction: String, MenuAction {
                                                   .cut, .copy, .paste, .openApp, .none]
 
     var id: Self { self }
+    var group: ActionGroup {
+        switch self {
+        case .left, .right, .middle: .mouse
+        case .back, .forward: .navigate
+        case .launchpad, .screenshot, .appWindows, .missionControl: .system
+        case .cut, .copy, .paste: .edit
+        case .openApp: .app
+        case .none: .none
+        }
+    }
     var title: String {
         switch self {
         case .left: "Left click"
@@ -60,6 +80,14 @@ enum GestureAction: String, MenuAction {
     case launchpad, screenshot, appWindows, missionControl, cut, copy, paste, openApp, none
 
     var id: Self { self }
+    var group: ActionGroup {
+        switch self {
+        case .launchpad, .screenshot, .appWindows, .missionControl: .system
+        case .cut, .copy, .paste: .edit
+        case .openApp: .app
+        case .none: .none
+        }
+    }
     var title: String {
         switch self {
         case .launchpad: "Launchpad"
