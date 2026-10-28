@@ -19,7 +19,7 @@ This document describes the internal architecture, hardware protocol details, an
 - [`Support/Info.plist`](Support/Info.plist) — App bundle metadata (`LSUIElement = true` for menu-bar-only app, version & build numbers).
 - [`build.sh`](build.sh) — Builds release binary, packages `build/LogiSwipe.app`, signs it (`SIGN_IDENTITY`, defaulting to the "LogiSwipe Self-Signed" keychain identity when present, else ad-hoc `-`), and installs to `/Applications/LogiSwipe.app`.
 - [`Sources/LogiSwipe/`](Sources/LogiSwipe/):
-  - [`App.swift`](Sources/LogiSwipe/App.swift) — SwiftUI `MenuBarExtra` entry point (`LogiSwipeApp`), `AppDelegate`, and `SettingsView` UI.
+  - [`App.swift`](Sources/LogiSwipe/App.swift) — SwiftUI `MenuBarExtra` entry point (`LogiSwipeApp`), the menu bar icon (`MenuBarIcon`: a mouse outline that fills with the battery level, faded while it is unknown), `AppDelegate`, and `SettingsView` UI.
   - [`T630.swift`](Sources/LogiSwipe/T630.swift) — Opens the T630 via `IOHIDManager`, parses HID Input Report 2 for finger positions/swipes, tracks sender IDs, and applies per-device tracking speed.
   - [`EventTap.swift`](Sources/LogiSwipe/EventTap.swift) — `CGEvent.tapCreate` session event tap that intercepts and remaps clicks and scroll wheel events coming specifically from the T630's `senderIDs`.
   - [`HIDService.swift`](Sources/LogiSwipe/HIDService.swift) — Private `IOKit` symbol bindings (`IOHIDEventSystemClient*` / `IOHIDServiceClient*`) to query the T630's event service `registryID` (matching `CGEventField(87)`) and set `kIOHIDMouseAccelerationType`.

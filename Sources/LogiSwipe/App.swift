@@ -6,10 +6,60 @@ struct LogiSwipeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {
-        MenuBarExtra("LogiSwipe", systemImage: "computermouse") {
+        MenuBarExtra {
             SettingsView(settings: .shared, t630: .shared, permissions: .shared)
+        } label: {
+            MenuBarIcon(t630: .shared)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// A mouse outline that fills from the bottom with the T630's battery level, faded while the level is unknown.
+struct MenuBarIcon: View {
+    @ObservedObject var t630: T630
+
+    var body: some View {
+        Image(nsImage: .menuBarIcon(battery: t630.connected ? t630.battery : nil))
+    }
+}
+
+extension NSImage {
+    /// An 18 pt template image, so the menu bar tints it for light and dark mode.
+    static func menuBarIcon(battery: Int?) -> NSImage {
+        let image = NSImage(size: NSSize(width: 12, height: 18), flipped: false) { _ in
+            let stroke: CGFloat = 1.5, gap: CGFloat = 1
+            let outline = NSRect(x: 0, y: 0, width: 12, height: 18).insetBy(dx: 0.5 + stroke / 2, dy: 0.5 + stroke / 2)
+            NSColor.black.withAlphaComponent(battery == nil ? 0.4 : 1).set()
+            // The line between the buttons.
+            let split = NSBezierPath()
+            split.move(to: NSPoint(x: outline.midX, y: outline.maxY))
+            split.line(to: NSPoint(x: outline.midX, y: outline.maxY - 5))
+
+            if let battery {
+                NSGraphicsContext.saveGraphicsState()
+                let inner = outline.insetBy(dx: stroke / 2 + gap, dy: stroke / 2 + gap)
+                NSBezierPath(roundedRect: inner, xRadius: inner.width / 2, yRadius: inner.width / 2).addClip()
+                var level = inner
+                level.size.height *= CGFloat(min(max(battery, 0), 100)) / 100
+                level.fill()
+                // Keep the button line visible where the level reaches it.
+                NSGraphicsContext.current!.cgContext.setBlendMode(.clear)
+                split.lineWidth = stroke * 2
+                split.lineCapStyle = .round
+                split.stroke()
+                NSGraphicsContext.restoreGraphicsState()
+            }
+            // One path, so the faded outline doesn't darken where the button line meets it.
+            let mouse = NSBezierPath(roundedRect: outline, xRadius: outline.width / 2, yRadius: outline.width / 2)
+            mouse.append(split)
+            mouse.lineWidth = stroke
+            mouse.lineCapStyle = .round
+            mouse.stroke()
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 }
 
