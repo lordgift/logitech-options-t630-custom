@@ -92,7 +92,7 @@ enum GestureAction: String, MenuAction {
         switch self {
         case .launchpad: "Launchpad"
         case .screenshot: "Capture screen"
-        case .appWindows: "App windows"
+        case .appWindows: "App Exposé"
         case .missionControl: "Mission Control"
         case .cut: "Cut"
         case .copy: "Copy"

@@ -73,15 +73,15 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 |---|---|---|
 | **Custom tracking speed** | `0.0` – `6.0`, marked at macOS's fastest, "Fast" (`3.0`) | Off (uses system speed) |
 | **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
-| **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
+| **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen, App Exposé, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
 | **Right click** | *(same as above)* | Right click |
 | **Middle click** (press the upper center) | *(same as above)* | Middle click |
-| **Hold middle click** (½ s) | Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Capture screen |
-| **Two-finger click** | Middle click, Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
+| **Hold middle click** (½ s) | Launchpad, Capture screen, App Exposé, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Capture screen |
+| **Two-finger click** | Middle click, Launchpad, Capture screen, App Exposé, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
 | **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Back / Forward |
 | **Swipe with 2 fingers** | Scroll freely (any direction), Switch desktops, Back / Forward, Do nothing | Scroll freely |
 | **Swipe with 3 fingers** (left / right) | Switch desktops, Back / Forward, Do nothing | Switch desktops |
-| **Double-tap with 1 finger** | Launchpad, Capture screen (like ⌘⇧4), App windows (like ⌃↓), Mission Control, Edit → Cut / Copy / Paste, Open app… (pick any app), Do nothing | App windows |
+| **Double-tap with 1 finger** | Launchpad, Capture screen (like ⌘⇧4), App Exposé (like ⌃↓), Mission Control, Edit → Cut / Copy / Paste, Open app… (pick any app), Do nothing | App Exposé |
 | **Double-tap with 2 fingers** | *(same as above)* | Paste |
 | **Swipe up with 3 fingers** | *(same as above)* | Mission Control |
 | **Swipe down with 3 fingers** | *(same as above)* | Do nothing |
