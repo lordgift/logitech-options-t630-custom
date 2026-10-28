@@ -4,7 +4,7 @@ enum Actions {
     private static let keyLeftArrow: CGKeyCode = 123, keyRightArrow: CGKeyCode = 124
     private static let keyLeftBracket: CGKeyCode = 33, keyRightBracket: CGKeyCode = 30
     private static let keyDownArrow: CGKeyCode = 125, key4: CGKeyCode = 21
-    private static let keyX: CGKeyCode = 7, keyC: CGKeyCode = 8, keyV: CGKeyCode = 9
+    private static let keyX: CGKeyCode = 7, keyC: CGKeyCode = 8, keyV: CGKeyCode = 9, keyF11: CGKeyCode = 103
 
     /// A trackpad pinch under the pointer: `magnification` since the previous event (1.0 doubles the
     /// size). `phase`: 1 began, 2 changed, 4 ended. Wrapped in begin and end gesture events like a
@@ -51,6 +51,7 @@ enum Actions {
         case .screenshot: perform(GestureAction.screenshot)
         case .appWindows: perform(GestureAction.appWindows)
         case .missionControl: perform(GestureAction.missionControl)
+        case .showDesktop: perform(GestureAction.showDesktop)
         case .cut: perform(GestureAction.cut)
         case .copy: perform(GestureAction.copy)
         case .paste: perform(GestureAction.paste)
@@ -70,6 +71,8 @@ enum Actions {
         // Same modifiers macOS registers for "Application windows" (control + fn, like the desktop switch).
         case .appWindows: press(keyDownArrow, [.maskControl, .maskSecondaryFn])
         case .missionControl: open("/System/Applications/Mission Control.app")
+        // F11 is "Show Desktop" in Keyboard Shortcuts → Mission Control; a function key carries fn.
+        case .showDesktop: press(keyF11, .maskSecondaryFn)
         case .cut: press(keyX, .maskCommand)
         case .copy: press(keyC, .maskCommand)
         case .paste: press(keyV, .maskCommand)

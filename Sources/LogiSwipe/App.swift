@@ -220,7 +220,8 @@ struct SettingsView: View {
                 actionPicker("2 fingers", $settings.twoFingerDoubleTap, key: Gesture.twoFingerDoubleTap.rawValue)
             }
             Divider()
-            SubGroup("Pinch") {
+            SubGroup("Pinch & Spread") {
+                actionPicker("4 fingers spread", $settings.fourFingerSpread, key: Gesture.fourFingerSpread.rawValue)
                 Toggle("Zoom in and out", isOn: $settings.pinchToZoom)
             }
         }

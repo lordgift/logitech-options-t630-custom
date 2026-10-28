@@ -41,6 +41,9 @@ final class T630: ObservableObject {
     static let pinchDistance = 6.0
     /// A pinch zooms in by 1.0 (twice the size) when the fingers spread this many units further apart.
     static let pinchScale = 40.0
+    /// Four or more fingers are spread apart (or pinched together) once their average distance from their
+    /// center grows (or shrinks) by this many units. Measured spreads grow it 6–10 units, from 21–32.
+    static let spreadDistance = 5.0
 
     @Published private(set) var connected = false
     /// Battery percent, nil until the mouse reports it.
@@ -73,6 +76,16 @@ final class T630: ObservableObject {
     private var magnifying = false           // a magnify gesture has begun and not ended
     private var pinchTravel = (x: 0.0, y: 0.0)  // how far the two fingers moved together meanwhile
     private var lastTap: (fingers: Int, end: Double)?
+    /// With four or more fingers the mouse sends three in a report that says more follow (`report[7]`
+    /// bit 7), then the rest in the next one; these are the first three until the rest arrive.
+    private var partial: [Int: (x: Int, y: Int)]?
+    /// With four or more fingers the mouse now and then sends a stray empty report between two with
+    /// fingers, so an empty report then only ends the touch if the next one is empty too.
+    private var strayEmpty = false
+    /// The fingers' least and most average distance from their center since there were this many (4 or more).
+    private var spreadRange: (fingers: Int, least: Double, most: Double)?
+    /// A four-finger spread showed the desktop, so pinching four fingers together brings the windows back.
+    private var desktopShown = false
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     private var devices = Set<IOHIDDevice>()  // with an input report callback registered
@@ -172,6 +185,19 @@ final class T630: ObservableObject {
             position[slot] = (Int(r[offset]), Int(r[offset + 1]))
             offset += 4
         }
+        if r[7] & 0x80 != 0 {
+            partial = position
+            return
+        }
+        if let partial {
+            position.merge(partial) { rest, _ in rest }
+            self.partial = nil
+        }
+        if position.isEmpty && lastPosition.count >= 4 && !strayEmpty {
+            strayEmpty = true
+            return
+        }
+        strayEmpty = false
         fingers = position.count
         let now = ProcessInfo.processInfo.systemUptime
         landed = position.keys.reduce(into: [:]) { $0[$1] = landed[$1] ?? now }
@@ -191,7 +217,7 @@ final class T630: ObservableObject {
             endPinch()
             if !lastPosition.isEmpty { touchEnded(at: now) }
             lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false; touchPressed = false
-            pinching = nil; pinchStart = nil; pinchTravel = (0, 0)
+            pinching = nil; pinchStart = nil; pinchTravel = (0, 0); spreadRange = nil
             return
         }
         // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
@@ -206,6 +232,7 @@ final class T630: ObservableObject {
 
         let settings = Settings.shared
         let touchAge = now - touchStart
+        if settings.enabled && position.count >= 4 && !buttonsDown { spread(position) }
         if settings.enabled && touchMaxFingers == 2 && moved.count == 2 && !buttonsDown {
             let fingers = Array(position.values)
             pinch(distance: hypot(Double(fingers[0].x - fingers[1].x), Double(fingers[0].y - fingers[1].y)), dx: dx, dy: dy)
@@ -220,8 +247,9 @@ final class T630: ObservableObject {
             SmoothScroller.shared.lift()
         }
 
-        // One action per touch, as soon as it is far enough and mostly sideways.
-        guard settings.enabled, !swiped, !buttonsDown else { return }
+        // One action per touch, as soon as it is far enough and mostly sideways. Four or more fingers
+        // only spread: their thumb moves a lot as they do, which would look like a swipe.
+        guard settings.enabled, !swiped, !buttonsDown, touchMaxFingers <= 3 else { return }
         // Y grows towards the front of the mouse, away from the palm, so moving up is positive.
         if touchMaxFingers >= 3, abs(travelY) >= Self.swipeDistance,
            abs(travelY) > Self.swipeRatio * abs(travelX) {
@@ -281,6 +309,33 @@ final class T630: ObservableObject {
         magnifying = false
         log.info("pinch: ended at distance \(self.pinchLast, privacy: .public)")
         Actions.magnify(0, phase: 4)
+    }
+
+    /// Four or more fingers spreading apart, like showing the desktop on a trackpad, and pinching back
+    /// together after Show Desktop to bring the windows back: once per touch.
+    private func spread(_ position: [Int: (x: Int, y: Int)]) {
+        let points = position.values.map { (x: Double($0.x), y: Double($0.y)) }
+        let cx = points.map(\.x).reduce(0, +) / Double(points.count), cy = points.map(\.y).reduce(0, +) / Double(points.count)
+        let spread = points.map { hypot($0.x - cx, $0.y - cy) }.reduce(0, +) / Double(points.count)
+        guard let range = spreadRange, range.fingers == position.count else {
+            spreadRange = (position.count, spread, spread)  // a finger landed or lifted: measure from here
+            return
+        }
+        spreadRange = (range.fingers, min(range.least, spread), max(range.most, spread))
+        guard !swiped else { return }
+        let settings = Settings.shared
+        let action = settings.gestureAction(for: .fourFingerSpread)
+        if spread - range.least >= Self.spreadDistance && !desktopShown {
+            swiped = true
+            desktopShown = action == .showDesktop
+            log.info("spread: \(position.count, privacy: .public) fingers, \(range.least, privacy: .public) → \(spread, privacy: .public) → \(action.rawValue, privacy: .public)")
+            Actions.perform(action, app: settings.apps[Gesture.fourFingerSpread.rawValue])
+        } else if range.most - spread >= Self.spreadDistance && desktopShown {
+            swiped = true
+            desktopShown = false
+            log.info("pinch: \(position.count, privacy: .public) fingers, \(range.most, privacy: .public) → \(spread, privacy: .public) → windows back")
+            Actions.perform(GestureAction.showDesktop)
+        }
     }
 
     /// Fires a double tap when this touch is the second of two quick taps with the same number of fingers.

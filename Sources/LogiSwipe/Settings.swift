@@ -25,10 +25,11 @@ enum ActionGroup: CaseIterable {
 }
 
 enum ClickAction: String, MenuAction {
-    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, cut, copy, paste, openApp, none
+    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, showDesktop, cut, copy, paste,
+         openApp, none
 
     /// What a two-finger click can do: the gestures' actions, plus a middle click.
-    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl,
+    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl, .showDesktop,
                                                   .cut, .copy, .paste, .openApp, .none]
 
     var id: Self { self }
@@ -36,7 +37,7 @@ enum ClickAction: String, MenuAction {
         switch self {
         case .left, .right, .middle: .mouse
         case .back, .forward: .navigate
-        case .launchpad, .screenshot, .appWindows, .missionControl: .system
+        case .launchpad, .screenshot, .appWindows, .missionControl, .showDesktop: .system
         case .cut, .copy, .paste: .edit
         case .openApp: .app
         case .none: .none
@@ -53,6 +54,7 @@ enum ClickAction: String, MenuAction {
         case .screenshot: GestureAction.screenshot.title
         case .appWindows: GestureAction.appWindows.title
         case .missionControl: GestureAction.missionControl.title
+        case .showDesktop: GestureAction.showDesktop.title
         case .cut: GestureAction.cut.title
         case .copy: GestureAction.copy.title
         case .paste: GestureAction.paste.title
@@ -77,12 +79,12 @@ enum SwipeAction: String, CaseIterable, Identifiable {
 }
 
 enum GestureAction: String, MenuAction {
-    case launchpad, screenshot, appWindows, missionControl, cut, copy, paste, openApp, none
+    case launchpad, screenshot, appWindows, missionControl, showDesktop, cut, copy, paste, openApp, none
 
     var id: Self { self }
     var group: ActionGroup {
         switch self {
-        case .launchpad, .screenshot, .appWindows, .missionControl: .system
+        case .launchpad, .screenshot, .appWindows, .missionControl, .showDesktop: .system
         case .cut, .copy, .paste: .edit
         case .openApp: .app
         case .none: .none
@@ -94,6 +96,7 @@ enum GestureAction: String, MenuAction {
         case .screenshot: "Capture screen"
         case .appWindows: "App Exposé"
         case .missionControl: "Mission Control"
+        case .showDesktop: "Show Desktop"
         case .cut: "Cut"
         case .copy: "Copy"
         case .paste: "Paste"
@@ -105,7 +108,7 @@ enum GestureAction: String, MenuAction {
 
 /// The gestures that perform a `GestureAction`; the raw value is the setting's UserDefaults key.
 enum Gesture: String {
-    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown, middleClickHold
+    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown, fourFingerSpread, middleClickHold
 }
 
 /// User settings, saved in UserDefaults. Read from the event tap and HID callbacks,
@@ -141,6 +144,8 @@ final class Settings: ObservableObject {
     @Published var twoFingerDoubleTap: GestureAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
     @Published var threeFingerSwipeUp: GestureAction { didSet { save(threeFingerSwipeUp.rawValue, "threeFingerSwipeUp") } }
     @Published var threeFingerSwipeDown: GestureAction { didSet { save(threeFingerSwipeDown.rawValue, "threeFingerSwipeDown") } }
+    /// Spreading four or more fingers apart, as a trackpad shows the desktop.
+    @Published var fourFingerSpread: GestureAction { didSet { save(fourFingerSpread.rawValue, "fourFingerSpread") } }
     /// Holding a middle click; Do nothing makes middle clicks go through without waiting.
     @Published var middleClickHold: GestureAction { didSet { save(middleClickHold.rawValue, "middleClickHold") } }
     /// Path of the app each "Open app" action opens, keyed by its setting's UserDefaults key.
@@ -176,6 +181,7 @@ final class Settings: ObservableObject {
         twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .paste
         threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
         threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .none
+        fourFingerSpread = Self.load(defaults, "fourFingerSpread") ?? .showDesktop
         middleClickHold = Self.load(defaults, "middleClickHold") ?? .screenshot
         apps = defaults.dictionary(forKey: "apps") as? [String: String] ?? [:]
     }
@@ -205,6 +211,7 @@ final class Settings: ObservableObject {
         twoFingerDoubleTap = fresh.twoFingerDoubleTap
         threeFingerSwipeUp = fresh.threeFingerSwipeUp
         threeFingerSwipeDown = fresh.threeFingerSwipeDown
+        fourFingerSpread = fresh.fourFingerSpread
         middleClickHold = fresh.middleClickHold
         apps = fresh.apps
     }
@@ -213,7 +220,8 @@ final class Settings: ObservableObject {
     private static let keys: Set<String> = [
         "enabled", "customSpeed", "trackingSpeed", "reverseScrolling", "smoothScrolling", "pinchToZoom", "scrollSpeed",
         "leftClick", "rightClick", "middleClick", "twoFingerClick", "oneFingerSwipe", "twoFingerSwipe", "threeFingerSwipe",
-        "oneFingerDoubleTap", "twoFingerDoubleTap", "threeFingerSwipeUp", "threeFingerSwipeDown", "middleClickHold", "apps",
+        "oneFingerDoubleTap", "twoFingerDoubleTap", "threeFingerSwipeUp", "threeFingerSwipeDown", "fourFingerSpread",
+        "middleClickHold", "apps",
     ]
 
     func clickAction(for kind: ClickKind) -> ClickAction {
@@ -235,6 +243,7 @@ final class Settings: ObservableObject {
         case .twoFingerDoubleTap: twoFingerDoubleTap
         case .threeFingerSwipeUp: threeFingerSwipeUp
         case .threeFingerSwipeDown: threeFingerSwipeDown
+        case .fourFingerSpread: fourFingerSpread
         case .middleClickHold: middleClickHold
         }
     }
