@@ -154,7 +154,7 @@ final class Settings: ObservableObject {
     private init() {
         defaults.register(defaults: [
             "enabled": true,
-            "customSpeed": false,
+            "customSpeed": true,
             "trackingSpeed": defaults.object(forKey: "com.apple.mouse.scaling") as? Double ?? 1.0,
             "reverseScrolling": false,
             "smoothScrolling": true,
