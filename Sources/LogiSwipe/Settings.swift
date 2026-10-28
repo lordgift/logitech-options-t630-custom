@@ -94,6 +94,8 @@ final class Settings: ObservableObject {
     @Published var reverseScrolling: Bool { didSet { save(reverseScrolling, "reverseScrolling") } }
     /// Scroll from the finger position like a trackpad, instead of the mouse's coarse wheel steps.
     @Published var smoothScrolling: Bool { didSet { save(smoothScrolling, "smoothScrolling") } }
+    /// Two fingers spreading or closing zoom in or out.
+    @Published var pinchToZoom: Bool { didSet { save(pinchToZoom, "pinchToZoom") } }
     /// Multiplier for smooth scrolling distance.
     @Published var scrollSpeed: Double { didSet { save(scrollSpeed, "scrollSpeed") } }
     @Published var leftClick: ClickAction { didSet { save(leftClick.rawValue, "leftClick") } }
@@ -119,6 +121,7 @@ final class Settings: ObservableObject {
             "trackingSpeed": defaults.object(forKey: "com.apple.mouse.scaling") as? Double ?? 1.0,
             "reverseScrolling": false,
             "smoothScrolling": true,
+            "pinchToZoom": true,
             "scrollSpeed": 1.0,
         ])
         enabled = defaults.bool(forKey: "enabled")
@@ -126,6 +129,7 @@ final class Settings: ObservableObject {
         trackingSpeed = defaults.double(forKey: "trackingSpeed")
         reverseScrolling = defaults.bool(forKey: "reverseScrolling")
         smoothScrolling = defaults.bool(forKey: "smoothScrolling")
+        pinchToZoom = defaults.bool(forKey: "pinchToZoom")
         scrollSpeed = defaults.double(forKey: "scrollSpeed")
         leftClick = Self.load(defaults, "leftClick") ?? .left
         rightClick = Self.load(defaults, "rightClick") ?? .right

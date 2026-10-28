@@ -37,6 +37,10 @@ final class T630: ObservableObject {
     static let tapDuration = 0.4, tapTravel = 4.0
     /// The second tap of a double tap must land within this many seconds of the first lifting.
     static let doubleTapGap = 0.35
+    /// Two fingers whose distance changes by this many units, more than they move together, are a pinch.
+    static let pinchDistance = 6.0
+    /// A pinch zooms one step per this many units the distance changes.
+    static let pinchStep = 8.0
 
     @Published private(set) var connected = false
     /// Battery percent, nil until the mouse reports it.
@@ -62,6 +66,11 @@ final class T630: ObservableObject {
     private var touchStart = 0.0           // system uptime when the touch began
     private var swiped = false
     private var touchPressed = false       // a button went down during the touch
+    /// Two-finger touch: nil until it is clearly a pinch or a scroll.
+    private var pinching: Bool?
+    private var pinchStart: Double?          // finger distance when both fingers were down
+    private var pinchLast = 0.0              // finger distance at the last zoom step
+    private var pinchTravel = (x: 0.0, y: 0.0)  // how far the two fingers moved together meanwhile
     private var lastTap: (fingers: Int, end: Double)?
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
@@ -180,6 +189,7 @@ final class T630: ObservableObject {
             SmoothScroller.shared.lift()
             if !lastPosition.isEmpty { touchEnded(at: now) }
             lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false; touchPressed = false
+            pinching = nil; pinchStart = nil; pinchTravel = (0, 0)
             return
         }
         // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
@@ -194,7 +204,11 @@ final class T630: ObservableObject {
 
         let settings = Settings.shared
         let touchAge = now - touchStart
-        let scrolls = touchMaxFingers == 1 || (touchMaxFingers == 2 && settings.twoFingerSwipe == .scroll)
+        if settings.enabled && touchMaxFingers == 2 && moved.count == 2 && !buttonsDown {
+            let fingers = Array(position.values)
+            pinch(distance: hypot(Double(fingers[0].x - fingers[1].x), Double(fingers[0].y - fingers[1].y)), dx: dx, dy: dy)
+        }
+        let scrolls = touchMaxFingers == 1 || (touchMaxFingers == 2 && settings.twoFingerSwipe == .scroll && pinching == false)
         if settings.enabled && settings.smoothScrolling && scrolls && !buttonsDown {
             SmoothScroller.shared.move(dx: dx, dy: dy, free: touchMaxFingers == 2,
                                        allowHorizontal: settings.oneFingerSwipe == .scroll, touchAge: touchAge)
@@ -223,6 +237,39 @@ final class T630: ObservableObject {
         swiped = true
         log.info("swipe: \(self.touchMaxFingers, privacy: .public) fingers, x \(self.travelX, privacy: .public), y \(self.travelY, privacy: .public) → \(action.rawValue, privacy: .public)")
         Actions.swipe(action, fingersMovedLeft: travelX < 0)
+    }
+
+    /// Two fingers spreading or closing zoom in or out, a step per `pinchStep` units; moving together, they scroll.
+    private func pinch(distance: Double, dx: Double, dy: Double) {
+        guard let pinching else {
+            guard Settings.shared.pinchToZoom else {
+                self.pinching = false
+                return
+            }
+            guard let pinchStart else {
+                pinchStart = distance
+                return
+            }
+            pinchTravel.x += dx
+            pinchTravel.y += dy
+            let spread = abs(distance - pinchStart), together = hypot(pinchTravel.x, pinchTravel.y)
+            if spread >= Self.pinchDistance && spread > together {
+                self.pinching = true
+                swiped = true  // nor a swipe or a tap
+                pinchLast = pinchStart
+                SmoothScroller.shared.lift()
+            } else if together >= SmoothScroller.deadZone && together >= spread {
+                self.pinching = false
+            }
+            return
+        }
+        guard pinching else { return }
+        while abs(distance - pinchLast) >= Self.pinchStep {
+            let zoomIn = distance > pinchLast
+            pinchLast += zoomIn ? Self.pinchStep : -Self.pinchStep
+            log.info("pinch: distance \(distance, privacy: .public) → zoom \(zoomIn ? "in" : "out", privacy: .public)")
+            Actions.zoom(in: zoomIn)
+        }
     }
 
     /// Fires a double tap when this touch is the second of two quick taps with the same number of fingers.

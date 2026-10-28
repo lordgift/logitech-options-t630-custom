@@ -165,6 +165,7 @@ struct SettingsView: View {
             actionPicker("Double-tap with 2 fingers", $settings.twoFingerDoubleTap, key: Gesture.twoFingerDoubleTap.rawValue)
             actionPicker("Swipe up with 3 fingers", $settings.threeFingerSwipeUp, key: Gesture.threeFingerSwipeUp.rawValue)
             actionPicker("Swipe down with 3 fingers", $settings.threeFingerSwipeDown, key: Gesture.threeFingerSwipeDown.rawValue)
+            Toggle("Pinch to zoom", isOn: $settings.pinchToZoom)
         }
     }
 

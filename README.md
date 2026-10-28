@@ -23,6 +23,7 @@ LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only t
 
 - **Trackpad-Style Scrolling**: Scroll with one finger, or with two fingers in any direction, with momentum.
 - **1-, 2- & 3-Finger Swipes**: Switch between desktops (3 fingers by default), go Back / Forward in browsers, or scroll sideways.
+- **Pinch to Zoom**: Pinch two fingers apart or together to zoom in or out.
 - **3-Finger Swipes Up & Down**: Open Mission Control or show the current app's windows, like a Mac trackpad.
 - **Double Tap**: Double-tap with 1 or 2 fingers to open Launchpad, capture the screen, show the current app's windows, or open Mission Control.
 - **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the upper center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
@@ -81,6 +82,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Double-tap with 2 fingers** | *(same as above)* | Paste |
 | **Swipe up with 3 fingers** | *(same as above)* | Mission Control |
 | **Swipe down with 3 fingers** | *(same as above)* | Do nothing |
+| **Pinch to zoom** | Pinch 2 fingers to zoom in and out (⌘+ / ⌘−) | On |
 | **Launch at login** | On / Off | Off |
 
 ## Tips & Troubleshooting

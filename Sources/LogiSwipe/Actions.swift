@@ -5,6 +5,12 @@ enum Actions {
     private static let keyLeftBracket: CGKeyCode = 33, keyRightBracket: CGKeyCode = 30
     private static let keyDownArrow: CGKeyCode = 125, key4: CGKeyCode = 21
     private static let keyX: CGKeyCode = 7, keyC: CGKeyCode = 8, keyV: CGKeyCode = 9
+    private static let keyEqual: CGKeyCode = 24, keyMinus: CGKeyCode = 27
+
+    /// Cmd+= / Cmd+-, the zoom shortcuts of most apps. macOS ignores posted pinch gestures.
+    static func zoom(in zoomIn: Bool) {
+        press(zoomIn ? keyEqual : keyMinus, .maskCommand)
+    }
 
     /// `fingersMovedLeft` follows the trackpad: fingers moving left go to the next desktop / page.
     static func swipe(_ action: SwipeAction, fingersMovedLeft left: Bool) {
