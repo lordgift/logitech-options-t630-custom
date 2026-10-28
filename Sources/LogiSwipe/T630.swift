@@ -39,8 +39,8 @@ final class T630: ObservableObject {
     static let doubleTapGap = 0.35
     /// Two fingers whose distance changes by this many units, more than they move together, are a pinch.
     static let pinchDistance = 6.0
-    /// A pinch zooms one step per this many units the distance changes.
-    static let pinchStep = 8.0
+    /// A pinch zooms in by 1.0 (twice the size) when the fingers spread this many units further apart.
+    static let pinchScale = 40.0
 
     @Published private(set) var connected = false
     /// Battery percent, nil until the mouse reports it.
@@ -69,7 +69,8 @@ final class T630: ObservableObject {
     /// Two-finger touch: nil until it is clearly a pinch or a scroll.
     private var pinching: Bool?
     private var pinchStart: Double?          // finger distance when both fingers were down
-    private var pinchLast = 0.0              // finger distance at the last zoom step
+    private var pinchLast = 0.0              // finger distance at the last magnify event
+    private var magnifying = false           // a magnify gesture has begun and not ended
     private var pinchTravel = (x: 0.0, y: 0.0)  // how far the two fingers moved together meanwhile
     private var lastTap: (fingers: Int, end: Double)?
 
@@ -187,6 +188,7 @@ final class T630: ObservableObject {
         touchPressed = touchPressed || buttonsDown
         guard !position.isEmpty else {
             SmoothScroller.shared.lift()
+            endPinch()
             if !lastPosition.isEmpty { touchEnded(at: now) }
             lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false; touchPressed = false
             pinching = nil; pinchStart = nil; pinchTravel = (0, 0)
@@ -207,6 +209,8 @@ final class T630: ObservableObject {
         if settings.enabled && touchMaxFingers == 2 && moved.count == 2 && !buttonsDown {
             let fingers = Array(position.values)
             pinch(distance: hypot(Double(fingers[0].x - fingers[1].x), Double(fingers[0].y - fingers[1].y)), dx: dx, dy: dy)
+        } else {
+            endPinch()
         }
         let scrolls = touchMaxFingers == 1 || (touchMaxFingers == 2 && settings.twoFingerSwipe == .scroll && pinching == false)
         if settings.enabled && settings.smoothScrolling && scrolls && !buttonsDown {
@@ -239,11 +243,12 @@ final class T630: ObservableObject {
         Actions.swipe(action, fingersMovedLeft: travelX < 0)
     }
 
-    /// Two fingers spreading or closing zoom in or out, a step per `pinchStep` units; moving together, they scroll.
+    /// Two fingers spreading or closing zoom in or out with a trackpad pinch gesture, following the
+    /// fingers; moving together, they scroll.
     private func pinch(distance: Double, dx: Double, dy: Double) {
-        guard let pinching else {
+        if pinching == nil {
             guard Settings.shared.pinchToZoom else {
-                self.pinching = false
+                pinching = false
                 return
             }
             guard let pinchStart else {
@@ -254,22 +259,28 @@ final class T630: ObservableObject {
             pinchTravel.y += dy
             let spread = abs(distance - pinchStart), together = hypot(pinchTravel.x, pinchTravel.y)
             if spread >= Self.pinchDistance && spread > together {
-                self.pinching = true
+                pinching = true
                 swiped = true  // nor a swipe or a tap
                 pinchLast = pinchStart
                 SmoothScroller.shared.lift()
+                magnifying = true
+                log.info("pinch: began at distance \(pinchStart, privacy: .public)")
+                Actions.magnify(0, phase: 1)
             } else if together >= SmoothScroller.deadZone && together >= spread {
-                self.pinching = false
+                pinching = false
             }
-            return
         }
-        guard pinching else { return }
-        while abs(distance - pinchLast) >= Self.pinchStep {
-            let zoomIn = distance > pinchLast
-            pinchLast += zoomIn ? Self.pinchStep : -Self.pinchStep
-            log.info("pinch: distance \(distance, privacy: .public) → zoom \(zoomIn ? "in" : "out", privacy: .public)")
-            Actions.zoom(in: zoomIn)
-        }
+        guard magnifying else { return }
+        Actions.magnify((distance - pinchLast) / Self.pinchScale, phase: 2)
+        pinchLast = distance
+    }
+
+    /// Ends the pinch gesture when the fingers lift, or the touch stops being a two-finger pinch.
+    private func endPinch() {
+        guard magnifying else { return }
+        magnifying = false
+        log.info("pinch: ended at distance \(self.pinchLast, privacy: .public)")
+        Actions.magnify(0, phase: 4)
     }
 
     /// Fires a double tap when this touch is the second of two quick taps with the same number of fingers.

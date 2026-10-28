@@ -5,11 +5,26 @@ enum Actions {
     private static let keyLeftBracket: CGKeyCode = 33, keyRightBracket: CGKeyCode = 30
     private static let keyDownArrow: CGKeyCode = 125, key4: CGKeyCode = 21
     private static let keyX: CGKeyCode = 7, keyC: CGKeyCode = 8, keyV: CGKeyCode = 9
-    private static let keyEqual: CGKeyCode = 24, keyMinus: CGKeyCode = 27
 
-    /// Cmd+= / Cmd+-, the zoom shortcuts of most apps. macOS ignores posted pinch gestures.
-    static func zoom(in zoomIn: Bool) {
-        press(zoomIn ? keyEqual : keyMinus, .maskCommand)
+    /// A trackpad pinch under the pointer: `magnification` since the previous event (1.0 doubles the
+    /// size). `phase`: 1 began, 2 changed, 4 ended. Wrapped in begin and end gesture events like a
+    /// trackpad's. Unlike dock swipes, macOS 27 still delivers posted magnify gestures.
+    static func magnify(_ magnification: Double, phase: Int64) {
+        if phase == 1 { postGesture(hidType: 61) }
+        postGesture(hidType: 8) {
+            $0.setIntegerValueField(CGEventField(rawValue: 132)!, value: phase)
+            $0.setDoubleValueField(CGEventField(rawValue: 113)!, value: magnification)
+        }
+        if phase == 4 { postGesture(hidType: 62) }
+    }
+
+    /// Posts a gesture event (type 29). `hidType`: 8 magnify, 61 begin gesture, 62 end gesture.
+    private static func postGesture(hidType: Int64, _ fill: (CGEvent) -> Void = { _ in }) {
+        guard let e = CGEvent(source: nil) else { return }
+        e.setIntegerValueField(CGEventField(rawValue: 55)!, value: 29)
+        e.setIntegerValueField(CGEventField(rawValue: 110)!, value: hidType)
+        fill(e)
+        e.post(tap: .cghidEventTap)
     }
 
     /// `fingersMovedLeft` follows the trackpad: fingers moving left go to the next desktop / page.

@@ -84,7 +84,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Double-tap with 2 fingers** | *(same as above)* | Paste |
 | **Swipe up with 3 fingers** | *(same as above)* | Mission Control |
 | **Swipe down with 3 fingers** | *(same as above)* | Do nothing |
-| **Pinch to zoom** | Pinch 2 fingers to zoom in and out (⌘+ / ⌘−) | On |
+| **Pinch to zoom** | Pinch 2 fingers to zoom in and out smoothly, like a trackpad | On |
 | **Launch at login** | On / Off | Off |
 
 ## Tips & Troubleshooting
