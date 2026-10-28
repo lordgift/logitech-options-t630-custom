@@ -136,7 +136,7 @@ final class Settings: ObservableObject {
         middleClick = Self.load(defaults, "middleClick") ?? .middle
         twoFingerClick = (Self.load(defaults, "twoFingerClick") as ClickAction?)
             .flatMap { ClickAction.twoFingerOptions.contains($0) ? $0 : nil } ?? .copy
-        oneFingerSwipe = Self.load(defaults, "oneFingerSwipe") ?? .scroll
+        oneFingerSwipe = Self.load(defaults, "oneFingerSwipe") ?? .backForward
         // Like a Mac trackpad: two fingers scroll, three switch desktops.
         twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .scroll
         threeFingerSwipe = (Self.load(defaults, "threeFingerSwipe") as SwipeAction?).flatMap { $0 == .scroll ? nil : $0 } ?? .desktops
