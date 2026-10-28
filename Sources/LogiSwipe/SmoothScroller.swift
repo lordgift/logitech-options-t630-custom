@@ -5,7 +5,9 @@ import AppKit
 /// wheel-like scrolling, which comes in coarse steps 30–140 ms apart.
 ///
 /// Direction matches the mouse's own scrolling: its wheel ticks follow the sign of the finger's
-/// X/Y movement, so positive finger movement scrolls positive here too (before Reverse).
+/// X/Y movement, so positive finger movement scrolls positive here too, before the system's
+/// Natural scrolling flips it. The system flips the mouse's own events but not posted ones,
+/// so `post` applies Natural scrolling itself (then Reverse).
 final class SmoothScroller {
     static let shared = SmoothScroller()
 
@@ -98,7 +100,8 @@ final class SmoothScroller {
 
     /// Posts a continuous (trackpad-like) scroll event. `momentum`: 0 none, 1 begin, 2 continue, 3 end.
     private func post(_ axis: Axis, _ pixels: Double, phase: Int64, momentum: Int64) {
-        remainder += Settings.shared.reverseScrolling ? -pixels : pixels
+        let natural = UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection") as? Bool ?? true
+        remainder += natural != Settings.shared.reverseScrolling ? -pixels : pixels
         let whole = remainder.rounded(.towardZero)
         remainder -= whole
         if phase == 4 || momentum == 3 { remainder = 0 }
@@ -108,6 +111,8 @@ final class SmoothScroller {
                                   wheel2: axis == .horizontal ? delta : 0, wheel3: 0)
         else { return }
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        // isDirectionInvertedFromDevice, as on the mouse's own events
+        event.setIntegerValueField(CGEventField(rawValue: 137)!, value: natural ? 1 : 0)
         event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
         event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: momentum)
         event.post(tap: .cghidEventTap)

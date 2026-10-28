@@ -54,6 +54,7 @@ The T630 (`0x046D:0xB00D`) sends touch data on report ID `2`:
 ### 4. Device Isolation & Pointer Speed (`HIDService.swift`)
 - Every pointer/scroll `CGEvent` carries the originating `IOHIDServiceClient` registry ID in `CGEventField(rawValue: 87)`.
 - `EventTap` checks `t630.isT630(sender:)` before modifying any event, guaranteeing zero impact on built-in trackpads or other mice. The registry ID changes on every Bluetooth reconnect and the new service can appear after `deviceConnected` looks, so a sender seen for the first time triggers a fresh lookup (`HIDService.all` makes a new client each call; a long-lived one can miss new services). If the lookup misses, the mouse's own scroll events leak through next to `SmoothScroller`'s.
+- `SmoothScroller` posts its own scroll events, which macOS does not flip for Natural scrolling (`com.apple.swipescrolldirection`) the way it flips the mouse's own, so it applies Natural scrolling itself before Reverse.
 - Pointer speed is set per-service on the T630's `IOHIDServiceClient` via `kIOHIDMouseAccelerationType` in 16.16 fixed-point format (`Int(speed * 65536)`), matching macOS's `com.apple.mouse.scaling` scale (`0.0...6.0`, where System Settings "Fast" is `3.0`).
 
 ---
