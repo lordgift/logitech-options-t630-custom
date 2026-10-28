@@ -31,9 +31,30 @@ What this script does:
 
 Verify that `build/LogiSwipe-<VERSION>.zip` exists and check its size.
 
+## 2b. Update the README Screenshot
+
+`docs/settings.png` is the settings panel shown in the README. Refresh it with Orca's computer use so it shows the new version and settings:
+
+1. Install and relaunch the new build, so the panel shows `<VERSION>`:
+   ```sh
+   ./build.sh && pkill -x LogiSwipe; sleep 1; open /Applications/LogiSwipe.app
+   ```
+2. Orca can't click the menu bar icon, so tell the user to click the LogiSwipe icon in the menu bar and leave the panel open. Then, in the same turn, wait up to 5 s for the panel and copy Orca's screenshot of it:
+   ```sh
+   pid=$(pgrep -x LogiSwipe)
+   for i in 1 2 3 4 5; do
+     shot=$(orca computer get-app-state --app pid:$pid --json 2>/dev/null \
+       | python3 -c 'import json, sys; r = json.load(sys.stdin).get("result") or {}; print((r.get("screenshot") or {}).get("path", ""))')
+     [ -n "$shot" ] && cp "$shot" docs/settings.png && echo "wrote docs/settings.png" && break
+     sleep 1
+   done
+   ```
+   Until the panel opens, `get-app-state` fails with `window_not_found`. If nothing was written, ask the user to open the panel again and rerun it.
+3. Look at `docs/settings.png` to check it shows the whole panel with the new version, then commit it with the version bump in step 3.
+
 ## 3. Commit & Create Git Tag
 
-1. Check `git status -s`. If there are uncommitted changes (such as the version bump in `Support/Info.plist` or release-ready code/docs), stage and commit them before tagging.
+1. Check `git status -s`. If there are uncommitted changes (such as the version bump in `Support/Info.plist`, `docs/settings.png`, or release-ready code/docs), stage and commit them before tagging.
 2. Create an annotated git tag for `<VERSION>`:
    ```sh
    git tag -a <VERSION> -m "Release <VERSION>"
