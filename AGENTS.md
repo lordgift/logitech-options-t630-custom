@@ -72,7 +72,7 @@ Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `repor
   SIGN_IDENTITY="Developer ID Application: ..." ./build.sh
   ```
 - **Creating a release**:
-  Use the `release` skill ([`.agents/skills/release/SKILL.md`](.agents/skills/release/SKILL.md)) or run:
+  Use the `release` skill ([`.agents/skills/release/SKILL.md`](.agents/skills/release/SKILL.md)), which builds, tags, writes release notes, pushes, and publishes the GitHub release with `gh`. To only build the zip, run:
   ```sh
   ./.agents/skills/release/scripts/release.sh <VERSION> [BUILD_NUMBER]
   ```

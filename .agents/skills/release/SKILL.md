@@ -1,12 +1,12 @@
 ---
 name: release
 description: >-
-  Use this skill when the user asks to create a release, bump the version, package/compress the binary or app bundle, tag the git release, or generate release notes for LogiSwipe.
+  Use this skill when the user asks to create a release, bump the version, package/compress the binary or app bundle, tag the git release, generate release notes, or publish a GitHub release for LogiSwipe.
 ---
 
 # Release Skill
 
-Follow these steps to prepare a new release of **LogiSwipe**: bump the version, build and package the app bundle, compress it for distribution, create a git tag, and write short, easy-to-understand release notes highlighting the main changes.
+Follow these steps to prepare a new release of **LogiSwipe**: bump the version, build and package the app bundle, compress it for distribution, create a git tag, write short, easy-to-understand release notes highlighting the main changes, and publish it as a GitHub release.
 
 ## 1. Determine the Target Version
 
@@ -57,11 +57,33 @@ Verify that `build/LogiSwipe-<VERSION>.zip` exists and check its size.
 ### Highlights
 - **<Big Feature 1>**: <Short, simple 1-line explanation>
 - **<Big Feature 2>**: <Short, simple 1-line explanation>
-
-### Quick Setup
-1. Turn off **Logi Options** and its driver extension (**System Settings → General → Login Items & Extensions → Driver Extensions**).
-2. Unzip `LogiSwipe-<VERSION>.zip` and move `LogiSwipe.app` to `/Applications` (if blocked by macOS, run `xattr -cr /Applications/LogiSwipe.app` in Terminal).
-3. Open **LogiSwipe**, allow **Input Monitoring** and **Accessibility**, then quit and reopen the app.
 ```
 
-3. Present the generated release notes, the git tag status, and the path to `build/LogiSwipe-<VERSION>.zip` to the user.
+Don't add a setup or installation section; the README covers that.
+
+## 5. Push & Publish the GitHub Release
+
+1. Check that the GitHub CLI is installed and logged in:
+   ```sh
+   gh auth status
+   ```
+   If `gh` is missing, install it with `brew install gh`. If it is not logged in, ask the user to run `! gh auth login` themselves (it needs a browser) and wait for them before continuing.
+2. Push `main` and the tag (commit straight to `main`; this repo doesn't use feature branches):
+   ```sh
+   git push origin main <VERSION>
+   ```
+3. Create the release with the zip attached and the release notes as its body:
+   ```sh
+   gh release create <VERSION> build/LogiSwipe-<VERSION>.zip --title "LogiSwipe <VERSION>" --notes-file build/RELEASE_NOTES-<VERSION>.md --verify-tag
+   ```
+   If the release already exists (rebuilding the same version), replace the zip and notes instead:
+   ```sh
+   gh release upload <VERSION> build/LogiSwipe-<VERSION>.zip --clobber
+   gh release edit <VERSION> --title "LogiSwipe <VERSION>" --notes-file build/RELEASE_NOTES-<VERSION>.md
+   ```
+4. Confirm it is the latest release and the zip is attached:
+   ```sh
+   gh release list -L 3
+   gh release view <VERSION> --json assets -q '.assets[].name'
+   ```
+5. Present the release URL, the release notes, and the path to `build/LogiSwipe-<VERSION>.zip` to the user.
