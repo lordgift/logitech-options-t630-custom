@@ -252,6 +252,7 @@ struct SettingsView: View {
     private func actionPicker<Action: MenuAction>(_ title: String, _ value: Binding<Action>, key: String,
                                                   options: [Action] = Array(Action.allCases)) -> some View {
         let app = settings.apps[key].map { FileManager.default.displayName(atPath: $0) }
+        let appIcon = settings.apps[key].map(Self.icon)
         func name(_ action: Action) -> String {
             action == .openApp ? app.map { "Open \($0)" } ?? action.title : action.title
         }
@@ -267,9 +268,19 @@ struct SettingsView: View {
                 value.wrappedValue = .openApp
             }
         }
+        /// The action's name, with the chosen app's icon for Open app.
+        func label(_ action: Action) -> some View {
+            Label {
+                Text(name(action))
+            } icon: {
+                if action == .openApp, let appIcon { Image(nsImage: appIcon).renderingMode(.original) }
+            }
+        }
         func item(_ action: Action) -> some View {
-            Toggle(name(action), isOn: Binding(get: { value.wrappedValue == action },
-                                               set: { if $0 || action == .openApp { choose(action) } }))
+            Toggle(isOn: Binding(get: { value.wrappedValue == action },
+                                 set: { if $0 || action == .openApp { choose(action) } })) {
+                label(action)
+            }
         }
         // Mouse and macOS actions under headers, Edit as a submenu, then Open app and Do nothing.
         let groups = ActionGroup.allCases.map { group in (group, options.filter { $0.group == group }) }
@@ -293,10 +304,23 @@ struct SettingsView: View {
                     }
                 }
             } label: {
-                Text(name(value.wrappedValue))
+                // Just the app's name: its icon says it opens it, and keeps the setting's title to one line.
+                if value.wrappedValue == .openApp, let app, let appIcon {
+                    Label { Text(app) } icon: { Image(nsImage: appIcon).renderingMode(.original) }
+                } else {
+                    Text(name(value.wrappedValue))
+                }
             }
             .fixedSize()
         }
+    }
+
+    /// An app's icon at menu size.
+    private static func icon(_ path: String) -> NSImage {
+        let icon = NSWorkspace.shared.icon(forFile: path)
+        icon.size = NSSize(width: 16, height: 16)
+        icon.isTemplate = false  // menus otherwise draw it in one color
+        return icon
     }
 
     private func chooseApp() -> String? {
