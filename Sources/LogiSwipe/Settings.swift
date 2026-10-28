@@ -1,16 +1,25 @@
 import Foundation
 
-/// An action list that can open an app the user picks; the app is stored per setting in `Settings.apps`.
-protocol AppOpeningAction: Hashable, Identifiable, CaseIterable {
+/// An action list with Cut / Copy / Paste (shown in an Edit submenu) and an action that opens
+/// an app the user picks, stored per setting in `Settings.apps`.
+protocol MenuAction: Hashable, Identifiable, CaseIterable {
+    static var cut: Self { get }
+    static var copy: Self { get }
+    static var paste: Self { get }
     static var openApp: Self { get }
     var title: String { get }
 }
 
-enum ClickAction: String, AppOpeningAction {
-    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, openApp, none
+extension MenuAction {
+    var isEdit: Bool { self == .cut || self == .copy || self == .paste }
+}
+
+enum ClickAction: String, MenuAction {
+    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, cut, copy, paste, openApp, none
 
     /// What a two-finger click can do: the gestures' actions, plus a middle click.
-    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl, .openApp, .none]
+    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl,
+                                                  .cut, .copy, .paste, .openApp, .none]
 
     var id: Self { self }
     var title: String {
@@ -24,6 +33,9 @@ enum ClickAction: String, AppOpeningAction {
         case .screenshot: GestureAction.screenshot.title
         case .appWindows: GestureAction.appWindows.title
         case .missionControl: GestureAction.missionControl.title
+        case .cut: GestureAction.cut.title
+        case .copy: GestureAction.copy.title
+        case .paste: GestureAction.paste.title
         case .openApp: GestureAction.openApp.title
         case .none: "Do nothing"
         }
@@ -44,8 +56,8 @@ enum SwipeAction: String, CaseIterable, Identifiable {
     }
 }
 
-enum GestureAction: String, AppOpeningAction {
-    case launchpad, screenshot, appWindows, missionControl, openApp, none
+enum GestureAction: String, MenuAction {
+    case launchpad, screenshot, appWindows, missionControl, cut, copy, paste, openApp, none
 
     var id: Self { self }
     var title: String {
@@ -54,6 +66,9 @@ enum GestureAction: String, AppOpeningAction {
         case .screenshot: "Capture screen"
         case .appWindows: "App windows"
         case .missionControl: "Mission Control"
+        case .cut: "Cut"
+        case .copy: "Copy"
+        case .paste: "Paste"
         case .openApp: "Open app…"
         case .none: "Do nothing"
         }

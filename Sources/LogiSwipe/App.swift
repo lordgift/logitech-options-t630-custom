@@ -210,40 +210,49 @@ struct SettingsView: View {
         }
     }
 
-    private enum Choice<Action: Hashable>: Hashable {
-        case action(Action), chooseApp
-    }
-
+    /// A menu rather than a Picker, so Cut / Copy / Paste can sit in an Edit submenu.
     /// `key` is the setting's UserDefaults key, under which the app for "Open app" is kept.
     /// Once an app is chosen, "Open app" shows its name, and "Choose another app…" picks a new one.
-    private func actionPicker<Action: AppOpeningAction>(_ title: String, _ value: Binding<Action>, key: String,
-                                                        options: [Action] = Array(Action.allCases)) -> some View {
+    private func actionPicker<Action: MenuAction>(_ title: String, _ value: Binding<Action>, key: String,
+                                                  options: [Action] = Array(Action.allCases)) -> some View {
         let app = settings.apps[key].map { FileManager.default.displayName(atPath: $0) }
-        let selection = Binding<Choice<Action>>(
-            get: { .action(value.wrappedValue) },
-            set: { choice in
-                if case .action(let action) = choice, action != .openApp || app != nil {
-                    value.wrappedValue = action
-                    return
-                }
-                // After the picker's menu has closed.
-                DispatchQueue.main.async {
-                    guard let path = chooseApp() else {
-                        value.wrappedValue = value.wrappedValue  // put the picker back
-                        return
+        func name(_ action: Action) -> String {
+            action == .openApp ? app.map { "Open \($0)" } ?? action.title : action.title
+        }
+        func choose(_ action: Action) {
+            guard action == .openApp else {
+                value.wrappedValue = action
+                return
+            }
+            // After the menu has closed.
+            DispatchQueue.main.async {
+                guard let path = chooseApp() else { return }
+                settings.apps[key] = path
+                value.wrappedValue = .openApp
+            }
+        }
+        func item(_ action: Action) -> some View {
+            Toggle(name(action), isOn: Binding(get: { value.wrappedValue == action },
+                                               set: { if $0 || action == .openApp { choose(action) } }))
+        }
+        let edits = options.filter(\.isEdit)
+        return LabeledContent(title) {
+            Menu {
+                ForEach(options) { action in
+                    if !action.isEdit {
+                        item(action)
+                    } else if action == edits.first {
+                        Menu("Edit") { ForEach(edits) { item($0) } }
                     }
-                    settings.apps[key] = path
-                    value.wrappedValue = .openApp
                 }
-            })
-        return Picker(title, selection: selection) {
-            ForEach(options) { action in
-                Text(action == .openApp ? app.map { "Open \($0)" } ?? action.title : action.title)
-                    .tag(Choice.action(action))
+                if app != nil && options.contains(.openApp) {
+                    Divider()
+                    Button("Choose another app…") { choose(.openApp) }
+                }
+            } label: {
+                Text(name(value.wrappedValue))
             }
-            if app != nil && options.contains(.openApp) {
-                Text("Choose another app…").tag(Choice<Action>.chooseApp)
-            }
+            .fixedSize()
         }
     }
 

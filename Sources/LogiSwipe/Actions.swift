@@ -4,6 +4,7 @@ enum Actions {
     private static let keyLeftArrow: CGKeyCode = 123, keyRightArrow: CGKeyCode = 124
     private static let keyLeftBracket: CGKeyCode = 33, keyRightBracket: CGKeyCode = 30
     private static let keyDownArrow: CGKeyCode = 125, key4: CGKeyCode = 21
+    private static let keyX: CGKeyCode = 7, keyC: CGKeyCode = 8, keyV: CGKeyCode = 9
 
     /// `fingersMovedLeft` follows the trackpad: fingers moving left go to the next desktop / page.
     static func swipe(_ action: SwipeAction, fingersMovedLeft left: Bool) {
@@ -27,6 +28,9 @@ enum Actions {
         case .screenshot: perform(GestureAction.screenshot)
         case .appWindows: perform(GestureAction.appWindows)
         case .missionControl: perform(GestureAction.missionControl)
+        case .cut: perform(GestureAction.cut)
+        case .copy: perform(GestureAction.copy)
+        case .paste: perform(GestureAction.paste)
         case .openApp: perform(GestureAction.openApp, app: app)
         case .left, .right, .middle, .none:
             break
@@ -43,6 +47,9 @@ enum Actions {
         // Same modifiers macOS registers for "Application windows" (control + fn, like the desktop switch).
         case .appWindows: press(keyDownArrow, [.maskControl, .maskSecondaryFn])
         case .missionControl: open("/System/Applications/Mission Control.app")
+        case .cut: press(keyX, .maskCommand)
+        case .copy: press(keyC, .maskCommand)
+        case .paste: press(keyV, .maskCommand)
         case .openApp: if let app { open(app) }
         case .none: break
         }
