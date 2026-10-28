@@ -68,10 +68,10 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 |---|---|---|
 | **Custom tracking speed** | `0.0` – `6.0` (macOS "Fast" is `3.0`) | Off (uses system speed) |
 | **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
-| **Left click** | Left click, Right click, Middle click, Back, Forward, Mission Control, Do nothing | Left click |
+| **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen, App windows, Mission Control, Do nothing | Left click |
 | **Right click** | *(same as above)* | Right click |
 | **Middle click** (press the upper center) | *(same as above)* | Middle click |
-| **Two-finger click** | *(same as above)* | Right click |
+| **Two-finger click** | Middle click, Launchpad, Capture screen, App windows, Mission Control, Do nothing | Do nothing |
 | **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Scroll sideways |
 | **Swipe with 2 fingers** | *(same as above)* | Switch desktops |
 | **Double-tap with 1 finger** | Launchpad, Capture screen (like ⌘⇧4), App windows (like ⌃↓), Mission Control, Do nothing | Do nothing |

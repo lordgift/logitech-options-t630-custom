@@ -109,7 +109,7 @@ final class EventTap: ObservableObject {
         case .left: (button, types) = (.left, [.leftMouseDown, .leftMouseDragged, .leftMouseUp])
         case .right: (button, types) = (.right, [.rightMouseDown, .rightMouseDragged, .rightMouseUp])
         case .middle: (button, types) = (.center, [.otherMouseDown, .otherMouseDragged, .otherMouseUp])
-        case .back, .forward, .missionControl, .none:
+        case .back, .forward, .launchpad, .screenshot, .appWindows, .missionControl, .none:
             if phase == 0 { Actions.perform(action) }
             return nil
         }

@@ -1,7 +1,10 @@
 import Foundation
 
 enum ClickAction: String, CaseIterable, Identifiable {
-    case left, right, middle, back, forward, missionControl, none
+    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, none
+
+    /// What a two-finger click can do: the gestures' actions, plus a middle click.
+    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl, .none]
 
     var id: Self { self }
     var title: String {
@@ -11,7 +14,10 @@ enum ClickAction: String, CaseIterable, Identifiable {
         case .middle: "Middle click"
         case .back: "Back"
         case .forward: "Forward"
-        case .missionControl: "Mission Control"
+        case .launchpad: TapAction.launchpad.title
+        case .screenshot: TapAction.screenshot.title
+        case .appWindows: TapAction.appWindows.title
+        case .missionControl: TapAction.missionControl.title
         case .none: "Do nothing"
         }
     }
@@ -89,7 +95,8 @@ final class Settings: ObservableObject {
         leftClick = Self.load(defaults, "leftClick") ?? .left
         rightClick = Self.load(defaults, "rightClick") ?? .right
         middleClick = Self.load(defaults, "middleClick") ?? .middle
-        twoFingerClick = Self.load(defaults, "twoFingerClick") ?? .right
+        twoFingerClick = (Self.load(defaults, "twoFingerClick") as ClickAction?)
+            .flatMap { ClickAction.twoFingerOptions.contains($0) ? $0 : nil } ?? .none
         oneFingerSwipe = Self.load(defaults, "oneFingerSwipe") ?? .scroll
         twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .desktops
         oneFingerDoubleTap = Self.load(defaults, "oneFingerDoubleTap") ?? .none

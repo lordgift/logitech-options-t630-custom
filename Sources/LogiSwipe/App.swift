@@ -150,7 +150,7 @@ struct SettingsView: View {
             clickPicker("Left click", $settings.leftClick)
             clickPicker("Right click", $settings.rightClick)
             clickPicker("Middle click", $settings.middleClick)
-            clickPicker("Two-finger click", $settings.twoFingerClick)
+            clickPicker("Two-finger click", $settings.twoFingerClick, options: ClickAction.twoFingerOptions)
         }
     }
 
@@ -200,9 +200,10 @@ struct SettingsView: View {
         }
     }
 
-    private func clickPicker(_ title: String, _ value: Binding<ClickAction>) -> some View {
+    private func clickPicker(_ title: String, _ value: Binding<ClickAction>,
+                             options: [ClickAction] = ClickAction.allCases) -> some View {
         Picker(title, selection: value) {
-            ForEach(ClickAction.allCases) { Text($0.title).tag($0) }
+            ForEach(options) { Text($0.title).tag($0) }
         }
     }
 

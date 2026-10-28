@@ -23,7 +23,10 @@ enum Actions {
         switch action {
         case .back: press(keyLeftBracket, .maskCommand)
         case .forward: press(keyRightBracket, .maskCommand)
-        case .missionControl: open("/System/Applications/Mission Control.app")
+        case .launchpad: perform(TapAction.launchpad)
+        case .screenshot: perform(TapAction.screenshot)
+        case .appWindows: perform(TapAction.appWindows)
+        case .missionControl: perform(TapAction.missionControl)
         case .left, .right, .middle, .none:
             break
         }
