@@ -180,6 +180,42 @@ final class Settings: ObservableObject {
         apps = defaults.dictionary(forKey: "apps") as? [String: String] ?? [:]
     }
 
+    /// Every setting back to its default, including the apps chosen for Open app.
+    func restoreDefaults() {
+        for key in defaults.dictionaryRepresentation().keys where Self.keys.contains(key) {
+            defaults.removeObject(forKey: key)
+        }
+        // A fresh instance reads the defaults, the same way launching does.
+        let fresh = Settings()
+        enabled = fresh.enabled
+        customSpeed = fresh.customSpeed
+        trackingSpeed = fresh.trackingSpeed
+        reverseScrolling = fresh.reverseScrolling
+        smoothScrolling = fresh.smoothScrolling
+        pinchToZoom = fresh.pinchToZoom
+        scrollSpeed = fresh.scrollSpeed
+        leftClick = fresh.leftClick
+        rightClick = fresh.rightClick
+        middleClick = fresh.middleClick
+        twoFingerClick = fresh.twoFingerClick
+        oneFingerSwipe = fresh.oneFingerSwipe
+        twoFingerSwipe = fresh.twoFingerSwipe
+        threeFingerSwipe = fresh.threeFingerSwipe
+        oneFingerDoubleTap = fresh.oneFingerDoubleTap
+        twoFingerDoubleTap = fresh.twoFingerDoubleTap
+        threeFingerSwipeUp = fresh.threeFingerSwipeUp
+        threeFingerSwipeDown = fresh.threeFingerSwipeDown
+        middleClickHold = fresh.middleClickHold
+        apps = fresh.apps
+    }
+
+    /// The UserDefaults keys of the settings above.
+    private static let keys: Set<String> = [
+        "enabled", "customSpeed", "trackingSpeed", "reverseScrolling", "smoothScrolling", "pinchToZoom", "scrollSpeed",
+        "leftClick", "rightClick", "middleClick", "twoFingerClick", "oneFingerSwipe", "twoFingerSwipe", "threeFingerSwipe",
+        "oneFingerDoubleTap", "twoFingerDoubleTap", "threeFingerSwipeUp", "threeFingerSwipeDown", "middleClickHold", "apps",
+    ]
+
     func clickAction(for kind: ClickKind) -> ClickAction {
         switch kind {
         case .left: leftClick

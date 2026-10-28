@@ -88,6 +88,8 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Pinch to zoom** | Pinch 2 fingers to zoom in and out smoothly, like a trackpad | On |
 | **Launch at login** | On / Off | Off |
 
+**Restore Defaults…** puts every setting back to the default above, and forgets the apps chosen for Open app. Launch at login stays as it is.
+
 ## Tips & Troubleshooting
 
 - **How swipes feel**: Swiping left moves to the desktop on the right (just like a MacBook trackpad). Once your fingers slide about a fifth of the way across the surface, the desktop switches immediately—you don't need to lift your fingers first.

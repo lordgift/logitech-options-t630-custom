@@ -79,6 +79,7 @@ struct SettingsView: View {
     @ObservedObject var t630: T630
     @ObservedObject var permissions: Permissions
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var confirmRestore = false
 
     // Two columns of cards, like Control Center's modules, so the panel fits on screen without scrolling.
     var body: some View {
@@ -237,9 +238,15 @@ struct SettingsView: View {
                 }
             LabeledContent("Version", value: Self.version)
             HStack {
+                Button("Restore Defaults…") { confirmRestore = true }
                 Spacer()
                 Button("Quit LogiSwipe") { NSApp.terminate(nil) }
-                    .buttonStyle(.bordered)
+            }
+            .buttonStyle(.bordered)
+            .confirmationDialog("Restore all settings to their defaults?", isPresented: $confirmRestore) {
+                Button("Restore Defaults", role: .destructive) { settings.restoreDefaults() }
+            } message: {
+                Text("This also forgets the apps chosen for Open app. Launch at login stays as it is.")
             }
         }
     }
