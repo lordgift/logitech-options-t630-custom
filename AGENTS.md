@@ -23,8 +23,8 @@ This document describes the internal architecture, hardware protocol details, an
   - [`T630.swift`](Sources/LogiSwipe/T630.swift) — Opens the T630 via `IOHIDManager`, parses HID Input Report 2 for finger positions/swipes, tracks sender IDs, and applies per-device tracking speed.
   - [`EventTap.swift`](Sources/LogiSwipe/EventTap.swift) — `CGEvent.tapCreate` session event tap that intercepts and remaps clicks and scroll wheel events coming specifically from the T630's `senderIDs`.
   - [`HIDService.swift`](Sources/LogiSwipe/HIDService.swift) — Private `IOKit` symbol bindings (`IOHIDEventSystemClient*` / `IOHIDServiceClient*`) to query the T630's event service `registryID` (matching `CGEventField(87)`) and set `kIOHIDMouseAccelerationType`.
-  - [`Actions.swift`](Sources/LogiSwipe/Actions.swift) — Synthesizes keyboard shortcuts (`Ctrl+Fn+Left/Right` for desktop switching, `Cmd+[/]` for Back/Forward, `Cmd+Shift+4` for Capture screen, `Ctrl+Fn+Down` for App windows) and launches `Mission Control.app` and Launchpad (`Apps.app` on macOS 26+, else `Launchpad.app`).
-  - [`Settings.swift`](Sources/LogiSwipe/Settings.swift) — `ObservableObject` backed by `UserDefaults` for all user preferences.
+  - [`Actions.swift`](Sources/LogiSwipe/Actions.swift) — Synthesizes keyboard shortcuts (`Ctrl+Fn+Left/Right` for desktop switching, `Cmd+[/]` for Back/Forward, `Cmd+Shift+4` for Capture screen, `Ctrl+Fn+Down` for App windows) and launches `Mission Control.app`, Launchpad (`Apps.app` on macOS 26+, else `Launchpad.app`) and the app chosen for Open app.
+  - [`Settings.swift`](Sources/LogiSwipe/Settings.swift) — `ObservableObject` backed by `UserDefaults` for all user preferences. Click and gesture actions (`ClickAction`, `GestureAction`) conform to `AppOpeningAction`, so `SettingsView.actionPicker` adds Open app… to their pickers; the app for each setting is kept in `apps`, keyed by that setting's UserDefaults key (`ClickKind.key`, `Gesture.rawValue`).
   - [`Permissions.swift`](Sources/LogiSwipe/Permissions.swift) — Polls and requests `Input Monitoring` (`IOHIDCheckAccess` / `IOHIDRequestAccess`) and `Accessibility` (`AXIsProcessTrusted`).
 
 ---

@@ -208,9 +208,10 @@ final class T630: ObservableObject {
         if touchMaxFingers >= 3, abs(travelY) >= Self.swipeDistance,
            abs(travelY) > Self.swipeRatio * abs(travelX) {
             swiped = true
-            let action = travelY > 0 ? settings.threeFingerSwipeUp : settings.threeFingerSwipeDown
+            let gesture: Gesture = travelY > 0 ? .threeFingerSwipeUp : .threeFingerSwipeDown
+            let action = settings.gestureAction(for: gesture)
             log.info("swipe: 3 fingers, x \(self.travelX, privacy: .public), y \(self.travelY, privacy: .public) → \(action.rawValue, privacy: .public)")
-            Actions.perform(action)
+            Actions.perform(action, app: settings.apps[gesture.rawValue])
             return
         }
         guard abs(travelX) >= Self.swipeDistance, abs(travelX) > Self.swipeRatio * abs(travelY)
@@ -239,12 +240,23 @@ final class T630: ObservableObject {
             return
         }
         lastTap = nil
-        let action = fingers == 2 ? Settings.shared.twoFingerDoubleTap : Settings.shared.oneFingerDoubleTap
+        let gesture: Gesture = fingers == 2 ? .twoFingerDoubleTap : .oneFingerDoubleTap
+        let action = Settings.shared.gestureAction(for: gesture)
         log.info("double tap: \(fingers, privacy: .public) fingers, gap \(self.touchStart - last.end, privacy: .public) → \(action.rawValue, privacy: .public)")
-        Actions.perform(action)
+        Actions.perform(action, app: Settings.shared.apps[gesture.rawValue])
     }
 }
 
 enum ClickKind {
     case left, right, middle, twoFinger
+
+    /// UserDefaults key of the setting for this click.
+    var key: String {
+        switch self {
+        case .left: "leftClick"
+        case .right: "rightClick"
+        case .middle: "middleClick"
+        case .twoFinger: "twoFingerClick"
+        }
+    }
 }

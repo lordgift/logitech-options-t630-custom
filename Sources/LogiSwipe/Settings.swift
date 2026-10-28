@@ -1,10 +1,16 @@
 import Foundation
 
-enum ClickAction: String, CaseIterable, Identifiable {
-    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, none
+/// An action list that can open an app the user picks; the app is stored per setting in `Settings.apps`.
+protocol AppOpeningAction: Hashable, Identifiable, CaseIterable {
+    static var openApp: Self { get }
+    var title: String { get }
+}
+
+enum ClickAction: String, AppOpeningAction {
+    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, openApp, none
 
     /// What a two-finger click can do: the gestures' actions, plus a middle click.
-    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl, .none]
+    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl, .openApp, .none]
 
     var id: Self { self }
     var title: String {
@@ -18,6 +24,7 @@ enum ClickAction: String, CaseIterable, Identifiable {
         case .screenshot: GestureAction.screenshot.title
         case .appWindows: GestureAction.appWindows.title
         case .missionControl: GestureAction.missionControl.title
+        case .openApp: GestureAction.openApp.title
         case .none: "Do nothing"
         }
     }
@@ -37,8 +44,8 @@ enum SwipeAction: String, CaseIterable, Identifiable {
     }
 }
 
-enum GestureAction: String, CaseIterable, Identifiable {
-    case launchpad, screenshot, appWindows, missionControl, none
+enum GestureAction: String, AppOpeningAction {
+    case launchpad, screenshot, appWindows, missionControl, openApp, none
 
     var id: Self { self }
     var title: String {
@@ -47,9 +54,15 @@ enum GestureAction: String, CaseIterable, Identifiable {
         case .screenshot: "Capture screen"
         case .appWindows: "App windows"
         case .missionControl: "Mission Control"
+        case .openApp: "Open app…"
         case .none: "Do nothing"
         }
     }
+}
+
+/// The gestures that perform a `GestureAction`; the raw value is the setting's UserDefaults key.
+enum Gesture: String {
+    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown
 }
 
 /// User settings, saved in UserDefaults. Read from the event tap and HID callbacks,
@@ -78,6 +91,8 @@ final class Settings: ObservableObject {
     @Published var twoFingerDoubleTap: GestureAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
     @Published var threeFingerSwipeUp: GestureAction { didSet { save(threeFingerSwipeUp.rawValue, "threeFingerSwipeUp") } }
     @Published var threeFingerSwipeDown: GestureAction { didSet { save(threeFingerSwipeDown.rawValue, "threeFingerSwipeDown") } }
+    /// Path of the app each "Open app" action opens, keyed by its setting's UserDefaults key.
+    @Published var apps: [String: String] { didSet { save(apps, "apps") } }
 
     private init() {
         defaults.register(defaults: [
@@ -106,6 +121,7 @@ final class Settings: ObservableObject {
         // Same as a Mac trackpad.
         threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
         threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .appWindows
+        apps = defaults.dictionary(forKey: "apps") as? [String: String] ?? [:]
     }
 
     func clickAction(for kind: ClickKind) -> ClickAction {
@@ -114,6 +130,15 @@ final class Settings: ObservableObject {
         case .right: rightClick
         case .middle: middleClick
         case .twoFinger: twoFingerClick
+        }
+    }
+
+    func gestureAction(for gesture: Gesture) -> GestureAction {
+        switch gesture {
+        case .oneFingerDoubleTap: oneFingerDoubleTap
+        case .twoFingerDoubleTap: twoFingerDoubleTap
+        case .threeFingerSwipeUp: threeFingerSwipeUp
+        case .threeFingerSwipeDown: threeFingerSwipeDown
         }
     }
 

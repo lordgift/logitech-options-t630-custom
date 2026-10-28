@@ -18,8 +18,8 @@ enum Actions {
         }
     }
 
-    /// Click actions that aren't a mouse button.
-    static func perform(_ action: ClickAction) {
+    /// Click actions that aren't a mouse button. `app` is the path that `.openApp` opens.
+    static func perform(_ action: ClickAction, app: String?) {
         switch action {
         case .back: press(keyLeftBracket, .maskCommand)
         case .forward: press(keyRightBracket, .maskCommand)
@@ -27,12 +27,13 @@ enum Actions {
         case .screenshot: perform(GestureAction.screenshot)
         case .appWindows: perform(GestureAction.appWindows)
         case .missionControl: perform(GestureAction.missionControl)
+        case .openApp: perform(GestureAction.openApp, app: app)
         case .left, .right, .middle, .none:
             break
         }
     }
 
-    static func perform(_ action: GestureAction) {
+    static func perform(_ action: GestureAction, app: String? = nil) {
         switch action {
         case .launchpad:
             // macOS 26 replaced Launchpad with Apps.
@@ -42,6 +43,7 @@ enum Actions {
         // Same modifiers macOS registers for "Application windows" (control + fn, like the desktop switch).
         case .appWindows: press(keyDownArrow, [.maskControl, .maskSecondaryFn])
         case .missionControl: open("/System/Applications/Mission Control.app")
+        case .openApp: if let app { open(app) }
         case .none: break
         }
     }

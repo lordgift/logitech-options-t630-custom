@@ -1,5 +1,6 @@
 import ServiceManagement
 import SwiftUI
+import UniformTypeIdentifiers
 
 @main
 struct LogiSwipeApp: App {
@@ -147,10 +148,11 @@ struct SettingsView: View {
 
     private var clicksSection: some View {
         Section("Clicks") {
-            clickPicker("Left click", $settings.leftClick)
-            clickPicker("Right click", $settings.rightClick)
-            clickPicker("Middle click", $settings.middleClick)
-            clickPicker("Two-finger click", $settings.twoFingerClick, options: ClickAction.twoFingerOptions)
+            actionPicker("Left click", $settings.leftClick, key: ClickKind.left.key)
+            actionPicker("Right click", $settings.rightClick, key: ClickKind.right.key)
+            actionPicker("Middle click", $settings.middleClick, key: ClickKind.middle.key)
+            actionPicker("Two-finger click", $settings.twoFingerClick, key: ClickKind.twoFinger.key,
+                         options: ClickAction.twoFingerOptions)
         }
     }
 
@@ -158,10 +160,10 @@ struct SettingsView: View {
         Section("Gestures") {
             swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe)
             swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe)
-            gesturePicker("Double-tap with 1 finger", $settings.oneFingerDoubleTap)
-            gesturePicker("Double-tap with 2 fingers", $settings.twoFingerDoubleTap)
-            gesturePicker("Swipe up with 3 fingers", $settings.threeFingerSwipeUp)
-            gesturePicker("Swipe down with 3 fingers", $settings.threeFingerSwipeDown)
+            actionPicker("Double-tap with 1 finger", $settings.oneFingerDoubleTap, key: Gesture.oneFingerDoubleTap.rawValue)
+            actionPicker("Double-tap with 2 fingers", $settings.twoFingerDoubleTap, key: Gesture.twoFingerDoubleTap.rawValue)
+            actionPicker("Swipe up with 3 fingers", $settings.threeFingerSwipeUp, key: Gesture.threeFingerSwipeUp.rawValue)
+            actionPicker("Swipe down with 3 fingers", $settings.threeFingerSwipeDown, key: Gesture.threeFingerSwipeDown.rawValue)
         }
     }
 
@@ -202,22 +204,55 @@ struct SettingsView: View {
         }
     }
 
-    private func clickPicker(_ title: String, _ value: Binding<ClickAction>,
-                             options: [ClickAction] = ClickAction.allCases) -> some View {
-        Picker(title, selection: value) {
-            ForEach(options) { Text($0.title).tag($0) }
-        }
-    }
-
     private func swipePicker(_ title: String, _ value: Binding<SwipeAction>) -> some View {
         Picker(title, selection: value) {
             ForEach(SwipeAction.allCases) { Text($0.title).tag($0) }
         }
     }
 
-    private func gesturePicker(_ title: String, _ value: Binding<GestureAction>) -> some View {
-        Picker(title, selection: value) {
-            ForEach(GestureAction.allCases) { Text($0.title).tag($0) }
+    private enum Choice<Action: Hashable>: Hashable {
+        case action(Action), chooseApp
+    }
+
+    /// `key` is the setting's UserDefaults key, under which the app for "Open app" is kept.
+    /// Once an app is chosen, "Open app" shows its name, and "Choose another app…" picks a new one.
+    private func actionPicker<Action: AppOpeningAction>(_ title: String, _ value: Binding<Action>, key: String,
+                                                        options: [Action] = Array(Action.allCases)) -> some View {
+        let app = settings.apps[key].map { FileManager.default.displayName(atPath: $0) }
+        let selection = Binding<Choice<Action>>(
+            get: { .action(value.wrappedValue) },
+            set: { choice in
+                if case .action(let action) = choice, action != .openApp || app != nil {
+                    value.wrappedValue = action
+                    return
+                }
+                // After the picker's menu has closed.
+                DispatchQueue.main.async {
+                    guard let path = chooseApp() else {
+                        value.wrappedValue = value.wrappedValue  // put the picker back
+                        return
+                    }
+                    settings.apps[key] = path
+                    value.wrappedValue = .openApp
+                }
+            })
+        return Picker(title, selection: selection) {
+            ForEach(options) { action in
+                Text(action == .openApp ? app.map { "Open \($0)" } ?? action.title : action.title)
+                    .tag(Choice.action(action))
+            }
+            if app != nil && options.contains(.openApp) {
+                Text("Choose another app…").tag(Choice<Action>.chooseApp)
+            }
         }
+    }
+
+    private func chooseApp() -> String? {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = "Choose"
+        NSApp.activate(ignoringOtherApps: true)
+        return panel.runModal() == .OK ? panel.url?.path : nil
     }
 }

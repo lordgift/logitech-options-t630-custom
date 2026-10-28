@@ -91,7 +91,7 @@ final class EventTap: ObservableObject {
         let action = Settings.shared.clickAction(for: kind)
         log.info("click: \(String(describing: kind), privacy: .public) at \(x, privacy: .public),\(y, privacy: .public), \(t630.fingers, privacy: .public) fingers → \(action.rawValue, privacy: .public)")
         heldAction = action
-        return remap(event, to: action, phase: 0)
+        return remap(event, to: action, phase: 0, app: Settings.shared.apps[kind.key])
     }
 
     /// The drags and release of a click follow its action.
@@ -103,14 +103,15 @@ final class EventTap: ObservableObject {
     }
 
     /// phase: 0 down, 1 dragged, 2 up.
-    private func remap(_ event: CGEvent, to action: ClickAction, phase: Int) -> CGEvent? {
+    /// `app` is the path an `.openApp` action opens.
+    private func remap(_ event: CGEvent, to action: ClickAction, phase: Int, app: String? = nil) -> CGEvent? {
         let button: CGMouseButton, types: [CGEventType]
         switch action {
         case .left: (button, types) = (.left, [.leftMouseDown, .leftMouseDragged, .leftMouseUp])
         case .right: (button, types) = (.right, [.rightMouseDown, .rightMouseDragged, .rightMouseUp])
         case .middle: (button, types) = (.center, [.otherMouseDown, .otherMouseDragged, .otherMouseUp])
-        case .back, .forward, .launchpad, .screenshot, .appWindows, .missionControl, .none:
-            if phase == 0 { Actions.perform(action) }
+        case .back, .forward, .launchpad, .screenshot, .appWindows, .missionControl, .openApp, .none:
+            if phase == 0 { Actions.perform(action, app: app) }
             return nil
         }
         event.type = types[phase]
