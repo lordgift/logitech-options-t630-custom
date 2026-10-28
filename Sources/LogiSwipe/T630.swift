@@ -185,18 +185,18 @@ final class T630: ObservableObject {
         // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
         if lastPosition.isEmpty { touchStart = now }
         let moved = position.compactMap { slot, p in lastPosition[slot].map { (x: p.x - $0.x, y: p.y - $0.y) } }
-        if !moved.isEmpty {
-            travelX += Double(moved.map(\.x).reduce(0, +)) / Double(moved.count)
-            travelY += Double(moved.map(\.y).reduce(0, +)) / Double(moved.count)
-        }
+        let dx = moved.isEmpty ? 0 : Double(moved.map(\.x).reduce(0, +)) / Double(moved.count)
+        let dy = moved.isEmpty ? 0 : Double(moved.map(\.y).reduce(0, +)) / Double(moved.count)
+        travelX += dx
+        travelY += dy
         touchMaxFingers = max(touchMaxFingers, position.count)
         lastPosition = position
 
         let settings = Settings.shared
         let touchAge = now - touchStart
-        if settings.enabled && settings.smoothScrolling && touchMaxFingers == 1 && !buttonsDown,
-           let finger = position.values.first {
-            SmoothScroller.shared.move(x: finger.x, y: finger.y,
+        let scrolls = touchMaxFingers == 1 || (touchMaxFingers == 2 && settings.twoFingerSwipe == .scroll)
+        if settings.enabled && settings.smoothScrolling && scrolls && !buttonsDown {
+            SmoothScroller.shared.move(dx: dx, dy: dy, free: touchMaxFingers == 2,
                                        allowHorizontal: settings.oneFingerSwipe == .scroll, touchAge: touchAge)
         } else {
             SmoothScroller.shared.lift()
@@ -216,11 +216,10 @@ final class T630: ObservableObject {
         }
         guard abs(travelX) >= Self.swipeDistance, abs(travelX) > Self.swipeRatio * abs(travelY)
         else { return }
-        let twoFingers = touchMaxFingers >= 2
-        if !twoFingers && touchAge < Self.oneFingerDelay { return }
-        let action = twoFingers ? settings.twoFingerSwipe : settings.oneFingerSwipe
-        // Plain scrolling needs nothing from us; keep watching in case a second finger lands.
-        if !twoFingers && action == .scroll { return }
+        if touchMaxFingers == 1 && touchAge < Self.oneFingerDelay { return }
+        let action = settings.swipeAction(fingers: touchMaxFingers)
+        // Scrolling needs nothing from us; keep watching in case another finger lands.
+        if action == .scroll { return }
         swiped = true
         log.info("swipe: \(self.touchMaxFingers, privacy: .public) fingers, x \(self.travelX, privacy: .public), y \(self.travelY, privacy: .public) → \(action.rawValue, privacy: .public)")
         Actions.swipe(action, fingersMovedLeft: travelX < 0)

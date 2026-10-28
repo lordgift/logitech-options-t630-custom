@@ -158,8 +158,9 @@ struct SettingsView: View {
 
     private var gesturesSection: some View {
         Section("Gestures") {
-            swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe)
-            swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe)
+            swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe, scroll: "Scroll sideways")
+            swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe, scroll: "Scroll freely")
+            swipePicker("Swipe with 3 fingers", $settings.threeFingerSwipe, scroll: nil)
             actionPicker("Double-tap with 1 finger", $settings.oneFingerDoubleTap, key: Gesture.oneFingerDoubleTap.rawValue)
             actionPicker("Double-tap with 2 fingers", $settings.twoFingerDoubleTap, key: Gesture.twoFingerDoubleTap.rawValue)
             actionPicker("Swipe up with 3 fingers", $settings.threeFingerSwipeUp, key: Gesture.threeFingerSwipeUp.rawValue)
@@ -204,9 +205,12 @@ struct SettingsView: View {
         }
     }
 
-    private func swipePicker(_ title: String, _ value: Binding<SwipeAction>) -> some View {
+    /// `scroll` titles the scroll option, which is left out when nil.
+    private func swipePicker(_ title: String, _ value: Binding<SwipeAction>, scroll: String?) -> some View {
         Picker(title, selection: value) {
-            ForEach(SwipeAction.allCases) { Text($0.title).tag($0) }
+            ForEach(SwipeAction.allCases.filter { $0 != .scroll || scroll != nil }) {
+                Text($0 == .scroll ? scroll! : $0.title).tag($0)
+            }
         }
     }
 

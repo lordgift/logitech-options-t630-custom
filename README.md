@@ -21,7 +21,8 @@ LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only t
 
 ## Features
 
-- **2-Finger & 1-Finger Swipes**: Switch between desktops, go Back / Forward in browsers, or scroll sideways.
+- **Trackpad-Style Scrolling**: Scroll with one finger, or with two fingers in any direction, with momentum.
+- **1-, 2- & 3-Finger Swipes**: Switch between desktops (3 fingers by default), go Back / Forward in browsers, or scroll sideways.
 - **3-Finger Swipes Up & Down**: Open Mission Control or show the current app's windows, like a Mac trackpad.
 - **Double Tap**: Double-tap with 1 or 2 fingers to open Launchpad, capture the screen, show the current app's windows, or open Mission Control.
 - **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the upper center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
@@ -74,7 +75,8 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Middle click** (press the upper center) | *(same as above)* | Middle click |
 | **Two-finger click** | Middle click, Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
 | **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Scroll sideways |
-| **Swipe with 2 fingers** | *(same as above)* | Switch desktops |
+| **Swipe with 2 fingers** | Scroll freely (any direction), Switch desktops, Back / Forward, Do nothing | Scroll freely |
+| **Swipe with 3 fingers** (left / right) | Switch desktops, Back / Forward, Do nothing | Switch desktops |
 | **Double-tap with 1 finger** | Launchpad, Capture screen (like ⌘⇧4), App windows (like ⌃↓), Mission Control, Edit → Cut / Copy / Paste, Open app… (pick any app), Do nothing | App windows |
 | **Double-tap with 2 fingers** | *(same as above)* | Paste |
 | **Swipe up with 3 fingers** | *(same as above)* | Mission Control |

@@ -54,6 +54,8 @@ Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `repor
 - The mouse fits at most 3 fingers in a report. With 4 it alternates a report of 3 (with `report[7]` bit 7 set, meaning more follow) and a report of the 4th. LogiSwipe doesn't merge them, so 4-finger touches aren't supported; they are also awkward on the small surface.
 - The second finger of a 2-finger swipe lands up to ~0.1 s after the first, so a touch only counts as a 1-finger swipe once it is `oneFingerDelay` (0.15 s) old. A 1-finger swipe set to "Scroll sideways" doesn't end the touch's swipe check, so a late second finger still triggers the 2-finger action.
 - Only one swipe fires per touch (`swiped = true` until `fingers == 0`).
+- Sideways swipes use `oneFingerSwipe`, `twoFingerSwipe` or `threeFingerSwipe` (3 or more fingers) by `touchMaxFingers` (`Settings.swipeAction(fingers:)`). By default, like a Mac trackpad, 2 fingers scroll and 3 switch desktops.
+- With smooth scrolling on, `SmoothScroller` gets the fingers' average movement each report (fingers present in both reports, as for swipes). One finger scrolls along one axis, locked when it starts moving; two fingers (with `twoFingerSwipe == .scroll`) scroll freely in any direction, starting once the touch is `oneFingerDelay` old in case a third finger is landing. When a finger lands and changes the kind of scroll, the scroll ends and a new one begins.
 - When a swipe action (`desktops`, `backForward`, `none`) is configured for the active finger count (`touchMaxFingers`), `EventTap.scroll` zeroes out the horizontal scroll delta (`Axis2`) so the gesture does not also scroll the window underneath.
 
 ### 3b. Double Tap Detection (`T630.swift`)

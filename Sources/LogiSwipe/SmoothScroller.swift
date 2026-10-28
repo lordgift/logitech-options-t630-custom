@@ -1,13 +1,15 @@
 import AppKit
 
-/// Turns 1-finger movement on the T630 into trackpad-style scrolling: pixel deltas on every
+/// Turns finger movement on the T630 into trackpad-style scrolling: pixel deltas on every
 /// report (~12 ms), scroll phases, and momentum after lifting. It replaces the mouse's own
-/// wheel-like scrolling, which comes in coarse steps 30–140 ms apart.
+/// wheel-like scrolling, which comes in coarse steps 30–140 ms apart. One finger scrolls along
+/// one axis, picked when it starts moving; two fingers scroll freely in any direction.
 ///
-/// Direction matches the mouse's own scrolling: its wheel ticks follow the sign of the finger's
-/// X/Y movement, so positive finger movement scrolls positive here too, before the system's
-/// Natural scrolling flips it. The system flips the mouse's own events but not posted ones,
-/// so `post` applies Natural scrolling itself (then Reverse).
+/// Finger Y grows towards the front of the mouse and X to the right, while a wheel's positive
+/// directions are up and left, so Y scrolls with its own sign and X with the opposite one
+/// (then a diagonal scrolls the way the fingers go). That is before the system's Natural
+/// scrolling flips it: the system flips the mouse's own events but not posted ones, so `post`
+/// applies Natural scrolling itself (then Reverse).
 final class SmoothScroller {
     static let shared = SmoothScroller()
 
@@ -16,77 +18,93 @@ final class SmoothScroller {
     /// Finger speed (units/s) at which each unit scrolls twice as far.
     private static let accelerationSpeed = 150.0
     /// Units the finger must move before scrolling starts, so clicks don't scroll.
-    private static let deadZone = 2.0
+    static let deadZone = 2.0
     /// Momentum keeps this fraction of its speed every 1/60 s, and stops below `momentumStop` px/s.
     private static let momentumDecay = 0.95, momentumStop = 30.0
 
-    private enum Axis { case vertical, horizontal }
+    private enum Axis { case vertical, horizontal, free }
+    private struct Vector {
+        var x = 0.0, y = 0.0
+        var length: Double { (x * x + y * y).squareRoot() }
+        static func * (v: Vector, k: Double) -> Vector { Vector(x: v.x * k, y: v.y * k) }
+        static func + (a: Vector, b: Vector) -> Vector { Vector(x: a.x + b.x, y: a.y + b.y) }
+    }
     private var axis: Axis?                          // set once scrolling has started
-    private var start: (x: Int, y: Int, time: Double)?
-    private var last: (x: Int, y: Int, time: Double)?
-    private var remainder = 0.0                      // sub-pixel scroll not posted yet
-    private var velocity = 0.0                       // px/s, smoothed
-    private var momentum: (timer: Timer, axis: Axis, velocity: Double, time: Double, started: Bool)?
+    private var free = false                         // the current touch scrolls freely
+    private var start: Double?                       // system uptime when the touch began
+    private var last = 0.0                           // system uptime of the previous report
+    private var travel = Vector()                    // finger units moved before scrolling started
+    private var remainder = Vector()                 // sub-pixel scroll not posted yet
+    private var velocity = Vector()                  // px/s, smoothed
+    private var momentum: (timer: Timer, velocity: Vector, time: Double, started: Bool)?
 
-    /// Every report while exactly one finger touches and no button is down.
-    func move(x: Int, y: Int, allowHorizontal: Bool, touchAge: Double) {
+    /// Every report while scrolling with no button down. `dx`/`dy` are the units the fingers moved
+    /// since the previous report; `free` scrolls in any direction instead of along one axis.
+    func move(dx: Double, dy: Double, free: Bool, allowHorizontal: Bool, touchAge: Double) {
         let now = ProcessInfo.processInfo.systemUptime
-        guard let previous = last, let start else {
+        if start != nil && free != self.free { lift() }  // a finger landed and changed the kind of scroll
+        guard let start else {
             stopMomentum()  // a new touch catches the page, as on a trackpad
-            self.start = (x, y, now); last = (x, y, now)
+            self.start = now; last = now; travel = Vector(); self.free = free
             return
         }
-        last = (x, y, now)
+        let dt = now - last
+        last = now
 
         guard let axis else {
-            let tx = Double(x - start.x), ty = Double(y - start.y)
-            if abs(ty) >= Self.deadZone && abs(ty) >= abs(tx) {
+            travel = travel + Vector(x: dx, y: dy)
+            if free {
+                // A second finger may still be landing on its way to a three-finger swipe.
+                if touchAge >= T630.oneFingerDelay && travel.length >= Self.deadZone {
+                    self.axis = .free
+                    scroll(travel, over: now - start, phase: 1)
+                }
+            } else if abs(travel.y) >= Self.deadZone && abs(travel.y) >= abs(travel.x) {
                 self.axis = .vertical
-                scroll(ty, over: now - start.time, phase: 1)
+                scroll(Vector(y: travel.y), over: now - start, phase: 1)
             } else if allowHorizontal && touchAge >= T630.oneFingerDelay
-                        && abs(tx) >= Self.deadZone && abs(tx) > abs(ty) {
+                        && abs(travel.x) >= Self.deadZone && abs(travel.x) > abs(travel.y) {
                 self.axis = .horizontal
-                scroll(tx, over: now - start.time, phase: 1)
+                scroll(Vector(x: travel.x), over: now - start, phase: 1)
             }
             return
         }
-        scroll(Double(axis == .vertical ? y - previous.y : x - previous.x), over: now - previous.time, phase: 2)
+        scroll(Vector(x: axis == .vertical ? 0 : dx, y: axis == .horizontal ? 0 : dy), over: dt, phase: 2)
     }
 
-    /// The finger lifted, or the touch stopped being a 1-finger scroll.
+    /// The fingers lifted, or the touch stopped being a scroll.
     func lift() {
-        defer { axis = nil; start = nil; last = nil }
-        guard let axis else { return }
-        post(axis, 0, phase: 4, momentum: 0)
-        if abs(velocity) >= Self.momentumStop * 5 {
+        defer { axis = nil; start = nil }
+        guard axis != nil else { return }
+        post(Vector(), phase: 4, momentum: 0)
+        if velocity.length >= Self.momentumStop * 5 {
             let timer = Timer(timeInterval: 1.0 / 120, repeats: true) { [weak self] _ in self?.momentumStep() }
             RunLoop.main.add(timer, forMode: .common)
-            momentum = (timer, axis, velocity, ProcessInfo.processInfo.systemUptime, false)
+            momentum = (timer, velocity, ProcessInfo.processInfo.systemUptime, false)
         }
-        velocity = 0
+        velocity = Vector()
     }
 
     /// `phase`: 1 began, 2 changed.
-    private func scroll(_ units: Double, over seconds: Double, phase: Int64) {
-        guard let axis else { return }
+    private func scroll(_ units: Vector, over seconds: Double, phase: Int64) {
         let dt = max(seconds, 0.008)  // reports can arrive back to back
-        let speed = abs(units) / dt
-        let pixels = units * Self.pixelsPerUnit * Settings.shared.scrollSpeed * (1 + speed / Self.accelerationSpeed)
-        velocity = 0.6 * velocity + 0.4 * pixels / dt
-        post(axis, pixels, phase: phase, momentum: 0)
+        let speed = units.length / dt
+        let pixels = units * (Self.pixelsPerUnit * Settings.shared.scrollSpeed * (1 + speed / Self.accelerationSpeed))
+        velocity = velocity * 0.6 + pixels * (0.4 / dt)
+        post(pixels, phase: phase, momentum: 0)
     }
 
     private func momentumStep() {
         guard var m = momentum else { return }
         let now = ProcessInfo.processInfo.systemUptime
         let dt = now - m.time
-        m.velocity *= pow(Self.momentumDecay, dt * 60)
+        m.velocity = m.velocity * pow(Self.momentumDecay, dt * 60)
         m.time = now
-        if abs(m.velocity) < Self.momentumStop {
+        if m.velocity.length < Self.momentumStop {
             stopMomentum()
             return
         }
-        post(m.axis, m.velocity * dt, phase: 0, momentum: m.started ? 2 : 1)
+        post(m.velocity * dt, phase: 0, momentum: m.started ? 2 : 1)
         m.started = true
         momentum = m
     }
@@ -95,20 +113,19 @@ final class SmoothScroller {
         guard let m = momentum else { return }
         m.timer.invalidate()
         momentum = nil
-        if m.started { post(m.axis, 0, phase: 0, momentum: 3) }
+        if m.started { post(Vector(), phase: 0, momentum: 3) }
     }
 
     /// Posts a continuous (trackpad-like) scroll event. `momentum`: 0 none, 1 begin, 2 continue, 3 end.
-    private func post(_ axis: Axis, _ pixels: Double, phase: Int64, momentum: Int64) {
+    private func post(_ pixels: Vector, phase: Int64, momentum: Int64) {
         let natural = UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection") as? Bool ?? true
-        remainder += natural != Settings.shared.reverseScrolling ? -pixels : pixels
-        let whole = remainder.rounded(.towardZero)
-        remainder -= whole
-        if phase == 4 || momentum == 3 { remainder = 0 }
-        let delta = Int32(clamping: Int(whole))
+        remainder = remainder + pixels * (natural != Settings.shared.reverseScrolling ? -1 : 1)
+        let whole = Vector(x: remainder.x.rounded(.towardZero), y: remainder.y.rounded(.towardZero))
+        remainder = remainder + whole * -1
+        if phase == 4 || momentum == 3 { remainder = Vector() }
         guard let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
-                                  wheel1: axis == .vertical ? delta : 0,
-                                  wheel2: axis == .horizontal ? delta : 0, wheel3: 0)
+                                  wheel1: Int32(clamping: Int(whole.y)),
+                                  wheel2: Int32(clamping: -Int(whole.x)), wheel3: 0)
         else { return }
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
         // isDirectionInvertedFromDevice, as on the mouse's own events

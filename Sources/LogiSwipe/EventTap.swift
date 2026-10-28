@@ -131,7 +131,7 @@ final class EventTap: ObservableObject {
                                               event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2),
                                               Int(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2)))
         // A sideways swipe that has its own action shouldn't also scroll.
-        let swipe = t630.touchMaxFingers >= 2 ? settings.twoFingerSwipe : settings.oneFingerSwipe
+        let swipe = settings.swipeAction(fingers: t630.touchMaxFingers)
         if swipe != .scroll {
             horizontal = (0, 0, 0)
             if vertical == (0, 0, 0) { return nil }

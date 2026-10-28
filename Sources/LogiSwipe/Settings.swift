@@ -101,7 +101,10 @@ final class Settings: ObservableObject {
     @Published var middleClick: ClickAction { didSet { save(middleClick.rawValue, "middleClick") } }
     @Published var twoFingerClick: ClickAction { didSet { save(twoFingerClick.rawValue, "twoFingerClick") } }
     @Published var oneFingerSwipe: SwipeAction { didSet { save(oneFingerSwipe.rawValue, "oneFingerSwipe") } }
+    /// `.scroll` scrolls in any direction with two fingers.
     @Published var twoFingerSwipe: SwipeAction { didSet { save(twoFingerSwipe.rawValue, "twoFingerSwipe") } }
+    /// Sideways; never `.scroll`.
+    @Published var threeFingerSwipe: SwipeAction { didSet { save(threeFingerSwipe.rawValue, "threeFingerSwipe") } }
     @Published var oneFingerDoubleTap: GestureAction { didSet { save(oneFingerDoubleTap.rawValue, "oneFingerDoubleTap") } }
     @Published var twoFingerDoubleTap: GestureAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
     @Published var threeFingerSwipeUp: GestureAction { didSet { save(threeFingerSwipeUp.rawValue, "threeFingerSwipeUp") } }
@@ -130,7 +133,9 @@ final class Settings: ObservableObject {
         twoFingerClick = (Self.load(defaults, "twoFingerClick") as ClickAction?)
             .flatMap { ClickAction.twoFingerOptions.contains($0) ? $0 : nil } ?? .copy
         oneFingerSwipe = Self.load(defaults, "oneFingerSwipe") ?? .scroll
-        twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .desktops
+        // Like a Mac trackpad: two fingers scroll, three switch desktops.
+        twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .scroll
+        threeFingerSwipe = (Self.load(defaults, "threeFingerSwipe") as SwipeAction?).flatMap { $0 == .scroll ? nil : $0 } ?? .desktops
         oneFingerDoubleTap = Self.load(defaults, "oneFingerDoubleTap") ?? .appWindows
         twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .paste
         threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
@@ -145,6 +150,10 @@ final class Settings: ObservableObject {
         case .middle: middleClick
         case .twoFinger: twoFingerClick
         }
+    }
+
+    func swipeAction(fingers: Int) -> SwipeAction {
+        fingers >= 3 ? threeFingerSwipe : fingers == 2 ? twoFingerSwipe : oneFingerSwipe
     }
 
     func gestureAction(for gesture: Gesture) -> GestureAction {
