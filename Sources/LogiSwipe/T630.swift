@@ -31,6 +31,11 @@ final class T630: ObservableObject {
     /// two-finger click; otherwise one is resting on the mouse while the other clicks.
     /// Measured: two-finger clicks land 0.01–0.08 s apart.
     static let twoFingerClickWindow = 0.25
+    /// A tap is a touch without a press that lifts within this many seconds and moves at most
+    /// `tapTravel` X/Y units. Measured: taps last 0.06–0.35 s and travel 1 unit at most.
+    static let tapDuration = 0.4, tapTravel = 4.0
+    /// The second tap of a double tap must land within this many seconds of the first lifting.
+    static let doubleTapGap = 0.35
 
     @Published private(set) var connected = false
     /// Battery percent, nil until the mouse reports it.
@@ -55,6 +60,8 @@ final class T630: ObservableObject {
     private var travelX = 0.0, travelY = 0.0
     private var touchStart = 0.0           // system uptime when the touch began
     private var swiped = false
+    private var touchPressed = false       // a button went down during the touch
+    private var lastTap: (fingers: Int, end: Double)?
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     private var devices = Set<IOHIDDevice>()  // with an input report callback registered
@@ -167,9 +174,11 @@ final class T630: ObservableObject {
         pressReported = buttonsDown
         if pressed { EventTap.shared.fingersReported() }
 
+        touchPressed = touchPressed || buttonsDown
         guard !position.isEmpty else {
             SmoothScroller.shared.lift()
-            lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false
+            if !lastPosition.isEmpty { touchEnded(at: now) }
+            lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false; touchPressed = false
             return
         }
         // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
@@ -204,6 +213,25 @@ final class T630: ObservableObject {
         swiped = true
         log.info("swipe: \(self.touchMaxFingers, privacy: .public) fingers, x \(self.travelX, privacy: .public), y \(self.travelY, privacy: .public) → \(action.rawValue, privacy: .public)")
         Actions.swipe(action, fingersMovedLeft: travelX < 0)
+    }
+
+    /// Fires a double tap when this touch is the second of two quick taps with the same number of fingers.
+    private func touchEnded(at now: Double) {
+        let duration = now - touchStart
+        guard Settings.shared.enabled, !touchPressed, !swiped, duration <= Self.tapDuration,
+              abs(travelX) <= Self.tapTravel, abs(travelY) <= Self.tapTravel else {
+            lastTap = nil
+            return
+        }
+        let fingers = min(touchMaxFingers, 2)
+        guard let last = lastTap, last.fingers == fingers, touchStart - last.end <= Self.doubleTapGap else {
+            lastTap = (fingers, now)
+            return
+        }
+        lastTap = nil
+        let action = fingers == 2 ? Settings.shared.twoFingerDoubleTap : Settings.shared.oneFingerDoubleTap
+        log.info("double tap: \(fingers, privacy: .public) fingers, gap \(self.touchStart - last.end, privacy: .public) → \(action.rawValue, privacy: .public)")
+        Actions.perform(action)
     }
 }
 

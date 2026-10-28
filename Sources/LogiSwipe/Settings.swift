@@ -31,6 +31,21 @@ enum SwipeAction: String, CaseIterable, Identifiable {
     }
 }
 
+enum TapAction: String, CaseIterable, Identifiable {
+    case launchpad, screenshot, appWindows, missionControl, none
+
+    var id: Self { self }
+    var title: String {
+        switch self {
+        case .launchpad: "Launchpad"
+        case .screenshot: "Capture screen"
+        case .appWindows: "App windows"
+        case .missionControl: "Mission Control"
+        case .none: "Do nothing"
+        }
+    }
+}
+
 /// User settings, saved in UserDefaults. Read from the event tap and HID callbacks,
 /// so everything here runs on the main thread.
 final class Settings: ObservableObject {
@@ -53,6 +68,8 @@ final class Settings: ObservableObject {
     @Published var twoFingerClick: ClickAction { didSet { save(twoFingerClick.rawValue, "twoFingerClick") } }
     @Published var oneFingerSwipe: SwipeAction { didSet { save(oneFingerSwipe.rawValue, "oneFingerSwipe") } }
     @Published var twoFingerSwipe: SwipeAction { didSet { save(twoFingerSwipe.rawValue, "twoFingerSwipe") } }
+    @Published var oneFingerDoubleTap: TapAction { didSet { save(oneFingerDoubleTap.rawValue, "oneFingerDoubleTap") } }
+    @Published var twoFingerDoubleTap: TapAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
 
     private init() {
         defaults.register(defaults: [
@@ -75,6 +92,8 @@ final class Settings: ObservableObject {
         twoFingerClick = Self.load(defaults, "twoFingerClick") ?? .right
         oneFingerSwipe = Self.load(defaults, "oneFingerSwipe") ?? .scroll
         twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .desktops
+        oneFingerDoubleTap = Self.load(defaults, "oneFingerDoubleTap") ?? .none
+        twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .none
     }
 
     func clickAction(for kind: ClickKind) -> ClickAction {

@@ -23,7 +23,7 @@ This document describes the internal architecture, hardware protocol details, an
   - [`T630.swift`](Sources/LogiSwipe/T630.swift) — Opens the T630 via `IOHIDManager`, parses HID Input Report 2 for finger positions/swipes, tracks sender IDs, and applies per-device tracking speed.
   - [`EventTap.swift`](Sources/LogiSwipe/EventTap.swift) — `CGEvent.tapCreate` session event tap that intercepts and remaps clicks and scroll wheel events coming specifically from the T630's `senderIDs`.
   - [`HIDService.swift`](Sources/LogiSwipe/HIDService.swift) — Private `IOKit` symbol bindings (`IOHIDEventSystemClient*` / `IOHIDServiceClient*`) to query the T630's event service `registryID` (matching `CGEventField(87)`) and set `kIOHIDMouseAccelerationType`.
-  - [`Actions.swift`](Sources/LogiSwipe/Actions.swift) — Synthesizes keyboard shortcuts (`Ctrl+Fn+Left/Right` for desktop switching, `Cmd+[/]` for Back/Forward) and launches `Mission Control.app`.
+  - [`Actions.swift`](Sources/LogiSwipe/Actions.swift) — Synthesizes keyboard shortcuts (`Ctrl+Fn+Left/Right` for desktop switching, `Cmd+[/]` for Back/Forward, `Cmd+Shift+4` for Capture screen, `Ctrl+Fn+Down` for App windows) and launches `Mission Control.app` and Launchpad (`Apps.app` on macOS 26+, else `Launchpad.app`).
   - [`Settings.swift`](Sources/LogiSwipe/Settings.swift) — `ObservableObject` backed by `UserDefaults` for all user preferences.
   - [`Permissions.swift`](Sources/LogiSwipe/Permissions.swift) — Polls and requests `Input Monitoring` (`IOHIDCheckAccess` / `IOHIDRequestAccess`) and `Accessibility` (`AXIsProcessTrusted`).
 
@@ -53,6 +53,11 @@ Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `repor
 - The second finger of a 2-finger swipe lands up to ~0.1 s after the first, so a touch only counts as a 1-finger swipe once it is `oneFingerDelay` (0.15 s) old. A 1-finger swipe set to "Scroll sideways" doesn't end the touch's swipe check, so a late second finger still triggers the 2-finger action.
 - Only one swipe fires per touch (`swiped = true` until `fingers == 0`).
 - When a swipe action (`desktops`, `backForward`, `none`) is configured for the active finger count (`touchMaxFingers`), `EventTap.scroll` zeroes out the horizontal scroll delta (`Axis2`) so the gesture does not also scroll the window underneath.
+
+### 3b. Double Tap Detection (`T630.swift`)
+- The T630 has no tap-to-click, so taps are detected from the finger reports alone, when the touch ends (`touchEnded`).
+- A tap is a touch with no button press (`touchPressed`) and no swipe that lasts at most `tapDuration` (0.4 s) and travels at most `tapTravel` (4 units) on each axis. Measured taps last 0.06–0.35 s and travel ≤ 1 unit.
+- A double tap is a second tap with the same finger count (1, or 2 for 2 or more) that lands within `doubleTapGap` (0.35 s) of the first one lifting. Measured gaps are 0.06–0.29 s; separate single taps were ≥ 0.7 s apart. It fires `oneFingerDoubleTap` / `twoFingerDoubleTap` (`TapAction`) when the second tap lifts, then starts over, so a triple tap doesn't fire twice.
 
 ### 4. Device Isolation & Pointer Speed (`HIDService.swift`)
 - Every pointer/scroll `CGEvent` carries the originating `IOHIDServiceClient` registry ID in `CGEventField(rawValue: 87)`.

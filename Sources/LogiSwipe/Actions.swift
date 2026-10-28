@@ -3,6 +3,7 @@ import AppKit
 enum Actions {
     private static let keyLeftArrow: CGKeyCode = 123, keyRightArrow: CGKeyCode = 124
     private static let keyLeftBracket: CGKeyCode = 33, keyRightBracket: CGKeyCode = 30
+    private static let keyDownArrow: CGKeyCode = 125, key4: CGKeyCode = 21
 
     /// `fingersMovedLeft` follows the trackpad: fingers moving left go to the next desktop / page.
     static func swipe(_ action: SwipeAction, fingersMovedLeft left: Bool) {
@@ -22,12 +23,28 @@ enum Actions {
         switch action {
         case .back: press(keyLeftBracket, .maskCommand)
         case .forward: press(keyRightBracket, .maskCommand)
-        case .missionControl:
-            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/System/Applications/Mission Control.app"),
-                                               configuration: NSWorkspace.OpenConfiguration())
+        case .missionControl: open("/System/Applications/Mission Control.app")
         case .left, .right, .middle, .none:
             break
         }
+    }
+
+    static func perform(_ action: TapAction) {
+        switch action {
+        case .launchpad:
+            // macOS 26 replaced Launchpad with Apps.
+            let apps = "/System/Applications/Apps.app"
+            open(FileManager.default.fileExists(atPath: apps) ? apps : "/System/Applications/Launchpad.app")
+        case .screenshot: press(key4, [.maskCommand, .maskShift])
+        // Same modifiers macOS registers for "Application windows" (control + fn, like the desktop switch).
+        case .appWindows: press(keyDownArrow, [.maskControl, .maskSecondaryFn])
+        case .missionControl: open("/System/Applications/Mission Control.app")
+        case .none: break
+        }
+    }
+
+    private static func open(_ path: String) {
+        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: NSWorkspace.OpenConfiguration())
     }
 
     private static func press(_ key: CGKeyCode, _ flags: CGEventFlags) {
