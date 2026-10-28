@@ -17,20 +17,21 @@ private func IOHIDServiceClientSetProperty(_ service: AnyObject, _ key: CFString
 /// A HID event service in the system's event pipeline. Its registry ID is the sender ID
 /// (CGEvent field 87) of every pointer event it produces.
 struct HIDService {
-    private static let client = IOHIDEventSystemClientCreateSimpleClient(kCFAllocatorDefault).takeRetainedValue()
-
+    private let client: AnyObject  // keeps the service usable
     let service: AnyObject
     let registryID: Int64
 
     static func all(vendor: Int, product: Int) -> [HIDService] {
+        // A new client each time: one kept around may not see services added after it was made.
+        let client = IOHIDEventSystemClientCreateSimpleClient(kCFAllocatorDefault).takeRetainedValue()
         let services = IOHIDEventSystemClientCopyServices(client)?.takeRetainedValue() as? [AnyObject] ?? []
         return services.compactMap { s in
-            let found = HIDService(service: s, registryID: 0)
+            let found = HIDService(client: client, service: s, registryID: 0)
             guard found.number(kIOHIDVendorIDKey)?.intValue == vendor,
                   found.number(kIOHIDProductIDKey)?.intValue == product,
                   let id = IOHIDServiceClientGetRegistryID(s)?.takeUnretainedValue() as NSNumber?
             else { return nil }
-            return HIDService(service: s, registryID: id.int64Value)
+            return HIDService(client: client, service: s, registryID: id.int64Value)
         }
     }
 

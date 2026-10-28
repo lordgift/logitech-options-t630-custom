@@ -29,6 +29,8 @@ final class T630: ObservableObject {
     @Published private(set) var connected = false
     /// Sender IDs (CGEvent field 87) of the events the T630 produces.
     private(set) var senderIDs: Set<Int64> = []
+    /// Senders already looked up and found not to be the T630.
+    private var otherSenders: Set<Int64> = []
 
     // Current touch.
     private(set) var fingers = 0           // fingers on the surface now
@@ -80,12 +82,25 @@ final class T630: ObservableObject {
         // The event service shows up a moment after the HID device, and macOS applies the
         // system tracking speed to it when it does.
         for delay in [0.5, 2.0] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.senderIDs = Set(HIDService.all(vendor: Self.vendor, product: Self.product).map(\.registryID))
-                log.info("T630 connected, sender IDs \(self.senderIDs.map(String.init).joined(separator: ","), privacy: .public)")
-                self.applyTrackingSpeed()
-            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { self.findServices() }
         }
+    }
+
+    /// Whether an event came from the T630. After a reconnect its event service can show up
+    /// later than `deviceConnected` looks, so a sender seen for the first time is looked up.
+    func isT630(sender: Int64) -> Bool {
+        if senderIDs.contains(sender) { return true }
+        if otherSenders.contains(sender) { return false }
+        findServices()
+        if senderIDs.contains(sender) { return true }
+        otherSenders.insert(sender)
+        return false
+    }
+
+    private func findServices() {
+        senderIDs = Set(HIDService.all(vendor: Self.vendor, product: Self.product).map(\.registryID))
+        log.info("T630 sender IDs \(self.senderIDs.map(String.init).joined(separator: ","), privacy: .public)")
+        applyTrackingSpeed()
     }
 
     func applyTrackingSpeed() {

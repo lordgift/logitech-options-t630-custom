@@ -36,7 +36,7 @@ final class EventTap: ObservableObject {
             return event
         }
         let settings = Settings.shared, t630 = T630.shared
-        guard settings.enabled, t630.senderIDs.contains(event.getIntegerValueField(senderField)) else { return event }
+        guard settings.enabled, t630.isT630(sender: event.getIntegerValueField(senderField)) else { return event }
 
         switch type {
         case .scrollWheel:
