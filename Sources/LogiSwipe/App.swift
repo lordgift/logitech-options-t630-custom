@@ -47,12 +47,19 @@ struct SettingsView: View {
         .scrollDisabled(true)
         .frame(width: 680)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear { t630.readBattery() }
     }
 
     private var statusSection: some View {
         Section {
             Toggle("Enabled", isOn: $settings.enabled)
             LabeledContent("T630", value: t630.connected ? "Connected" : "Not connected")
+            if t630.connected, let battery = t630.battery {
+                LabeledContent("Battery") {
+                    // battery.0percent … battery.100percent, nearest quarter
+                    Label("\(battery)%", systemImage: "battery.\(min(100, (battery + 12) / 25 * 25))percent")
+                }
+            }
             permissionRow("Input Monitoring", allowed: permissions.inputMonitoring, pane: "Privacy_ListenEvent")
             permissionRow("Accessibility", allowed: permissions.accessibility, pane: "Privacy_Accessibility")
             if !permissions.inputMonitoring || !permissions.accessibility {

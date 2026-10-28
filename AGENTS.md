@@ -38,6 +38,8 @@ The T630 (`0x046D:0xB00D`) sends touch data on report ID `2`:
 - `report[8]` = Finger presence bitmask (`bit 0` = slot 0, `bit 1` = slot 1, etc.; `0` when no fingers touch)
 - `report[9...]` = 4 bytes per active finger slot in bit order: `X, Y, ?, ?` where `X` ranges roughly `0...76` across the surface width.
 
+Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `report[1]` = percent `0...100`. macOS doesn't surface it, so `T630.readBattery()` requests it with `IOHIDDeviceGetReport` on connect and whenever the menu opens, and `handle` picks up any report 3 the mouse sends on its own.
+
 ### 2. Click Classification (`T630.swift` & `EventTap.swift`)
 - **Two-finger click**: Any physical click (`leftMouseDown` or `rightMouseDown`) while `fingers >= 2`.
 - **Middle click**: The T630 has no physical middle button. A single-finger click in the upper center (`firstFingerX` in `T630.middleZoneX` `30...55` and `firstFingerY <= T630.middleMaxY` `53`) is a middle click. Measured middle clicks land at X 34–48, Y 39–52; left and right clicks all land at Y ≥ 55. A press in the lower center can't be told from a left click.

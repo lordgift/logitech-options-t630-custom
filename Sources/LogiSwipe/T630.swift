@@ -7,6 +7,8 @@ import IOKit.hid
 ///   [1]   buttons (bit 0 = left, bit 1 = right; the mouse picks the side from where you press)
 ///   [8]   finger bitmask (bit 0 = finger 1, bit 1 = finger 2); 0 when nothing touches
 ///   [9…]  4 bytes per finger present, in bit order: X, Y, ?, ?   (X runs about 0–76)
+///
+/// Input report 3 is the battery: [1] = percent (0–100). macOS doesn't show it anywhere.
 final class T630: ObservableObject {
     static let shared = T630()
     static let vendor = 0x046D, product = 0xB00D
@@ -27,6 +29,8 @@ final class T630: ObservableObject {
     static let middleZoneX = 30...55, middleMaxY = 53
 
     @Published private(set) var connected = false
+    /// Battery percent, nil until the mouse reports it.
+    @Published private(set) var battery: Int?
     /// Sender IDs (CGEvent field 87) of the events the T630 produces.
     private(set) var senderIDs: Set<Int64> = []
     /// Senders already looked up and found not to be the T630.
@@ -57,10 +61,12 @@ final class T630: ObservableObject {
                 T630.shared.handle(report, length)
             }, nil)
             T630.shared.deviceConnected()
+            T630.shared.readBattery()
         }, nil)
         IOHIDManagerRegisterDeviceRemovalCallback(manager, { _, _, _, device in
             T630.shared.devices.remove(device)
             T630.shared.connected = !T630.shared.devices.isEmpty
+            if !T630.shared.connected { T630.shared.battery = nil }
         }, nil)
         IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
         open()
@@ -97,6 +103,18 @@ final class T630: ObservableObject {
         return false
     }
 
+    /// Asks the mouse for its battery report, which it otherwise sends only now and then.
+    func readBattery() {
+        for device in devices {
+            var report: [UInt8] = [3, 0]
+            var length = report.count
+            if IOHIDDeviceGetReport(device, kIOHIDReportTypeInput, 3, &report, &length) == kIOReturnSuccess,
+               length >= 2 {
+                battery = Int(report[1])
+            }
+        }
+    }
+
     private func findServices() {
         senderIDs = Set(HIDService.all(vendor: Self.vendor, product: Self.product).map(\.registryID))
         log.info("T630 sender IDs \(self.senderIDs.map(String.init).joined(separator: ","), privacy: .public)")
@@ -113,6 +131,10 @@ final class T630: ObservableObject {
     }
 
     private func handle(_ r: UnsafeMutablePointer<UInt8>, _ length: Int) {
+        if r[0] == 3, length >= 2 {
+            battery = Int(r[1])
+            return
+        }
         guard length > 8, r[0] == 2 else { return }
         let buttonsDown = r[1] & 0x03 != 0
         let mask = Int(r[8])

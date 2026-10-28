@@ -25,6 +25,7 @@ LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only t
 - **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the upper center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
 - **Separate Scroll Direction**: Reverse scrolling just for the T630 without flipping your Mac's trackpad.
 - **Custom Pointer Speed**: Set the T630's pointer speed independently—even faster than the maximum setting in macOS System Settings.
+- **Battery Level**: See the T630's battery percentage in the menu, which macOS doesn't show.
 - **Launch at Login**: Lives quietly in your menu bar and starts automatically when you log in.
 
 ## Installation
