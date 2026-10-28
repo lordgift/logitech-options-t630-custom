@@ -50,6 +50,8 @@ Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `repor
 ### 3. Swipe Detection (`T630.swift`)
 - Finger deltas (`dx`, `dy`) are averaged across all fingers present in both the previous and current report while no button is held down (`!buttonsDown`).
 - Once `!swiped`, `abs(travelX) >= 15.0` (`swipeDistance`), and `abs(travelX) > abs(travelY) * 1.5` (`swipeRatio`; 1-finger swipes drift upwards), a swipe triggers immediately without waiting for finger lift.
+- A touch that has had 3 or more fingers (`touchMaxFingers >= 3`) and travels `abs(travelY) >= 15.0` with `abs(travelY) > abs(travelX) * 1.5` is a swipe up or down instead, firing `threeFingerSwipeUp` / `threeFingerSwipeDown` (`GestureAction`, defaulting to Mission Control / App windows like a Mac trackpad). Y grows towards the front of the mouse, away from the palm, so up is positive (checked by swiping up: `travelY` +15). Measured three-finger swipes travel 37–51 Y units. `EventTap.scroll` then drops the vertical scroll delta too.
+- The mouse fits at most 3 fingers in a report. With 4 it alternates a report of 3 (with `report[7]` bit 7 set, meaning more follow) and a report of the 4th. LogiSwipe doesn't merge them, so 4-finger touches aren't supported; they are also awkward on the small surface.
 - The second finger of a 2-finger swipe lands up to ~0.1 s after the first, so a touch only counts as a 1-finger swipe once it is `oneFingerDelay` (0.15 s) old. A 1-finger swipe set to "Scroll sideways" doesn't end the touch's swipe check, so a late second finger still triggers the 2-finger action.
 - Only one swipe fires per touch (`swiped = true` until `fingers == 0`).
 - When a swipe action (`desktops`, `backForward`, `none`) is configured for the active finger count (`touchMaxFingers`), `EventTap.scroll` zeroes out the horizontal scroll delta (`Axis2`) so the gesture does not also scroll the window underneath.
@@ -57,7 +59,7 @@ Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `repor
 ### 3b. Double Tap Detection (`T630.swift`)
 - The T630 has no tap-to-click, so taps are detected from the finger reports alone, when the touch ends (`touchEnded`).
 - A tap is a touch with no button press (`touchPressed`) and no swipe that lasts at most `tapDuration` (0.4 s) and travels at most `tapTravel` (4 units) on each axis. Measured taps last 0.06–0.35 s and travel ≤ 1 unit.
-- A double tap is a second tap with the same finger count (1, or 2 for 2 or more) that lands within `doubleTapGap` (0.35 s) of the first one lifting. Measured gaps are 0.06–0.29 s; separate single taps were ≥ 0.7 s apart. It fires `oneFingerDoubleTap` / `twoFingerDoubleTap` (`TapAction`) when the second tap lifts, then starts over, so a triple tap doesn't fire twice.
+- A double tap is a second tap with the same finger count (1, or 2 for 2 or more) that lands within `doubleTapGap` (0.35 s) of the first one lifting. Measured gaps are 0.06–0.29 s; separate single taps were ≥ 0.7 s apart. It fires `oneFingerDoubleTap` / `twoFingerDoubleTap` (`GestureAction`) when the second tap lifts, then starts over, so a triple tap doesn't fire twice.
 
 ### 4. Device Isolation & Pointer Speed (`HIDService.swift`)
 - Every pointer/scroll `CGEvent` carries the originating `IOHIDServiceClient` registry ID in `CGEventField(rawValue: 87)`.

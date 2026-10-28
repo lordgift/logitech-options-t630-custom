@@ -158,8 +158,10 @@ struct SettingsView: View {
         Section("Gestures") {
             swipePicker("Swipe with 1 finger", $settings.oneFingerSwipe)
             swipePicker("Swipe with 2 fingers", $settings.twoFingerSwipe)
-            tapPicker("Double-tap with 1 finger", $settings.oneFingerDoubleTap)
-            tapPicker("Double-tap with 2 fingers", $settings.twoFingerDoubleTap)
+            gesturePicker("Double-tap with 1 finger", $settings.oneFingerDoubleTap)
+            gesturePicker("Double-tap with 2 fingers", $settings.twoFingerDoubleTap)
+            gesturePicker("Swipe up with 3 fingers", $settings.threeFingerSwipeUp)
+            gesturePicker("Swipe down with 3 fingers", $settings.threeFingerSwipeDown)
         }
     }
 
@@ -213,9 +215,9 @@ struct SettingsView: View {
         }
     }
 
-    private func tapPicker(_ title: String, _ value: Binding<TapAction>) -> some View {
+    private func gesturePicker(_ title: String, _ value: Binding<GestureAction>) -> some View {
         Picker(title, selection: value) {
-            ForEach(TapAction.allCases) { Text($0.title).tag($0) }
+            ForEach(GestureAction.allCases) { Text($0.title).tag($0) }
         }
     }
 }

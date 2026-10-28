@@ -123,7 +123,7 @@ final class EventTap: ObservableObject {
         // SmoothScroller posts its own scrolling from the finger position instead.
         if settings.smoothScrolling { return nil }
         // Each axis is carried three ways: line delta and point delta (integers), fixed-point delta.
-        let vertical: (Int, Double, Int) = (Int(event.getIntegerValueField(.scrollWheelEventDeltaAxis1)),
+        var vertical: (Int, Double, Int) = (Int(event.getIntegerValueField(.scrollWheelEventDeltaAxis1)),
                                             event.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1),
                                             Int(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1)))
         var horizontal: (Int, Double, Int) = (Int(event.getIntegerValueField(.scrollWheelEventDeltaAxis2)),
@@ -134,6 +134,11 @@ final class EventTap: ObservableObject {
         if swipe != .scroll {
             horizontal = (0, 0, 0)
             if vertical == (0, 0, 0) { return nil }
+        }
+        // Nor should a three-finger swipe up or down.
+        if t630.touchMaxFingers >= 3 && (settings.threeFingerSwipeUp != .none || settings.threeFingerSwipeDown != .none) {
+            vertical = (0, 0, 0)
+            if horizontal == (0, 0, 0) { return nil }
         }
         let sign = settings.reverseScrolling ? -1 : 1
         event.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: Int64(sign * vertical.0))

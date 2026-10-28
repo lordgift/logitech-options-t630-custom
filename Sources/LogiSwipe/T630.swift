@@ -13,7 +13,8 @@ final class T630: ObservableObject {
     static let shared = T630()
     static let vendor = 0x046D, product = 0xB00D
 
-    /// How far (in X units) fingers must travel sideways to count as a swipe.
+    /// How far (in X units, or Y units for a three-finger swipe up or down) fingers must travel
+    /// to count as a swipe. Measured: three-finger swipes up or down travel 37–51 Y units.
     static let swipeDistance = 15.0
     /// A swipe must move this many times more sideways than up/down; 1-finger swipes drift upwards.
     static let swipeRatio = 1.5
@@ -202,8 +203,17 @@ final class T630: ObservableObject {
         }
 
         // One action per touch, as soon as it is far enough and mostly sideways.
-        guard settings.enabled, !swiped, !buttonsDown,
-              abs(travelX) >= Self.swipeDistance, abs(travelX) > Self.swipeRatio * abs(travelY)
+        guard settings.enabled, !swiped, !buttonsDown else { return }
+        // Y grows towards the front of the mouse, away from the palm, so moving up is positive.
+        if touchMaxFingers >= 3, abs(travelY) >= Self.swipeDistance,
+           abs(travelY) > Self.swipeRatio * abs(travelX) {
+            swiped = true
+            let action = travelY > 0 ? settings.threeFingerSwipeUp : settings.threeFingerSwipeDown
+            log.info("swipe: 3 fingers, x \(self.travelX, privacy: .public), y \(self.travelY, privacy: .public) → \(action.rawValue, privacy: .public)")
+            Actions.perform(action)
+            return
+        }
+        guard abs(travelX) >= Self.swipeDistance, abs(travelX) > Self.swipeRatio * abs(travelY)
         else { return }
         let twoFingers = touchMaxFingers >= 2
         if !twoFingers && touchAge < Self.oneFingerDelay { return }

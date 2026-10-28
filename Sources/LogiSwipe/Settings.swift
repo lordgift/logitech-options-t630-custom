@@ -14,10 +14,10 @@ enum ClickAction: String, CaseIterable, Identifiable {
         case .middle: "Middle click"
         case .back: "Back"
         case .forward: "Forward"
-        case .launchpad: TapAction.launchpad.title
-        case .screenshot: TapAction.screenshot.title
-        case .appWindows: TapAction.appWindows.title
-        case .missionControl: TapAction.missionControl.title
+        case .launchpad: GestureAction.launchpad.title
+        case .screenshot: GestureAction.screenshot.title
+        case .appWindows: GestureAction.appWindows.title
+        case .missionControl: GestureAction.missionControl.title
         case .none: "Do nothing"
         }
     }
@@ -37,7 +37,7 @@ enum SwipeAction: String, CaseIterable, Identifiable {
     }
 }
 
-enum TapAction: String, CaseIterable, Identifiable {
+enum GestureAction: String, CaseIterable, Identifiable {
     case launchpad, screenshot, appWindows, missionControl, none
 
     var id: Self { self }
@@ -74,8 +74,10 @@ final class Settings: ObservableObject {
     @Published var twoFingerClick: ClickAction { didSet { save(twoFingerClick.rawValue, "twoFingerClick") } }
     @Published var oneFingerSwipe: SwipeAction { didSet { save(oneFingerSwipe.rawValue, "oneFingerSwipe") } }
     @Published var twoFingerSwipe: SwipeAction { didSet { save(twoFingerSwipe.rawValue, "twoFingerSwipe") } }
-    @Published var oneFingerDoubleTap: TapAction { didSet { save(oneFingerDoubleTap.rawValue, "oneFingerDoubleTap") } }
-    @Published var twoFingerDoubleTap: TapAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
+    @Published var oneFingerDoubleTap: GestureAction { didSet { save(oneFingerDoubleTap.rawValue, "oneFingerDoubleTap") } }
+    @Published var twoFingerDoubleTap: GestureAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
+    @Published var threeFingerSwipeUp: GestureAction { didSet { save(threeFingerSwipeUp.rawValue, "threeFingerSwipeUp") } }
+    @Published var threeFingerSwipeDown: GestureAction { didSet { save(threeFingerSwipeDown.rawValue, "threeFingerSwipeDown") } }
 
     private init() {
         defaults.register(defaults: [
@@ -101,6 +103,9 @@ final class Settings: ObservableObject {
         twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .desktops
         oneFingerDoubleTap = Self.load(defaults, "oneFingerDoubleTap") ?? .none
         twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .none
+        // Same as a Mac trackpad.
+        threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
+        threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .appWindows
     }
 
     func clickAction(for kind: ClickKind) -> ClickAction {

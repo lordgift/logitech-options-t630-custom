@@ -23,16 +23,16 @@ enum Actions {
         switch action {
         case .back: press(keyLeftBracket, .maskCommand)
         case .forward: press(keyRightBracket, .maskCommand)
-        case .launchpad: perform(TapAction.launchpad)
-        case .screenshot: perform(TapAction.screenshot)
-        case .appWindows: perform(TapAction.appWindows)
-        case .missionControl: perform(TapAction.missionControl)
+        case .launchpad: perform(GestureAction.launchpad)
+        case .screenshot: perform(GestureAction.screenshot)
+        case .appWindows: perform(GestureAction.appWindows)
+        case .missionControl: perform(GestureAction.missionControl)
         case .left, .right, .middle, .none:
             break
         }
     }
 
-    static func perform(_ action: TapAction) {
+    static func perform(_ action: GestureAction) {
         switch action {
         case .launchpad:
             // macOS 26 replaced Launchpad with Apps.
