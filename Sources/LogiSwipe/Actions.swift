@@ -34,6 +34,8 @@ enum Actions {
             break
         case .desktops:
             // Same modifiers macOS registers for "Move left/right a space" (control + fn).
+            // Pressed even at the last desktop, in case the HUD's idea of where we are is wrong.
+            DesktopHUD.shared.swiped(next: left)
             press(left ? keyRightArrow : keyLeftArrow, [.maskControl, .maskSecondaryFn])
         case .backForward:
             press(left ? keyRightBracket : keyLeftBracket, .maskCommand)
