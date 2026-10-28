@@ -3,7 +3,7 @@ import AppKit
 enum Actions {
     private static let keyLeftArrow: CGKeyCode = 123, keyRightArrow: CGKeyCode = 124
     private static let keyLeftBracket: CGKeyCode = 33, keyRightBracket: CGKeyCode = 30
-    private static let keyDownArrow: CGKeyCode = 125, key4: CGKeyCode = 21
+    private static let keyDownArrow: CGKeyCode = 125, key3: CGKeyCode = 20, key4: CGKeyCode = 21, key5: CGKeyCode = 23
     private static let keyX: CGKeyCode = 7, keyC: CGKeyCode = 8, keyV: CGKeyCode = 9, keyF11: CGKeyCode = 103
 
     /// A trackpad pinch under the pointer: `magnification` since the previous event (1.0 doubles the
@@ -48,7 +48,9 @@ enum Actions {
         case .back: press(keyLeftBracket, .maskCommand)
         case .forward: press(keyRightBracket, .maskCommand)
         case .launchpad: perform(GestureAction.launchpad)
+        case .screenshotScreen: perform(GestureAction.screenshotScreen)
         case .screenshot: perform(GestureAction.screenshot)
+        case .screenshotTools: perform(GestureAction.screenshotTools)
         case .appWindows: perform(GestureAction.appWindows)
         case .missionControl: perform(GestureAction.missionControl)
         case .showDesktop: perform(GestureAction.showDesktop)
@@ -67,7 +69,9 @@ enum Actions {
             // macOS 26 replaced Launchpad with Apps.
             let apps = "/System/Applications/Apps.app"
             open(FileManager.default.fileExists(atPath: apps) ? apps : "/System/Applications/Launchpad.app")
+        case .screenshotScreen: press(key3, [.maskCommand, .maskShift])
         case .screenshot: press(key4, [.maskCommand, .maskShift])
+        case .screenshotTools: press(key5, [.maskCommand, .maskShift])
         // Same modifiers macOS registers for "Application windows" (control + fn, like the desktop switch).
         case .appWindows: press(keyDownArrow, [.maskControl, .maskSecondaryFn])
         case .missionControl: open("/System/Applications/Mission Control.app")

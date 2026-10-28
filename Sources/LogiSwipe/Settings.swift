@@ -10,7 +10,7 @@ protocol MenuAction: Hashable, Identifiable, CaseIterable {
 
 /// The groups of an action menu, in menu order.
 enum ActionGroup: CaseIterable {
-    case mouse, navigate, system, edit, app, none
+    case mouse, navigate, system, capture, edit, app, none
 
     /// Header of the group's section; nil for the groups shown without one.
     var title: String? {
@@ -18,6 +18,7 @@ enum ActionGroup: CaseIterable {
         case .mouse: "Click"
         case .navigate: "Navigate"
         case .system: "macOS"
+        case .capture: "Capture screen"
         case .edit: "Edit"
         case .app, .none: nil
         }
@@ -25,11 +26,12 @@ enum ActionGroup: CaseIterable {
 }
 
 enum ClickAction: String, MenuAction {
-    case left, right, middle, back, forward, launchpad, screenshot, appWindows, missionControl, showDesktop, cut, copy, paste,
-         openApp, none
+    case left, right, middle, back, forward, launchpad, screenshotScreen, screenshot, screenshotTools, appWindows, missionControl,
+         showDesktop, cut, copy, paste, openApp, none
 
     /// What a two-finger click can do: the gestures' actions, plus a middle click.
-    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshot, .appWindows, .missionControl, .showDesktop,
+    static let twoFingerOptions: [ClickAction] = [.middle, .launchpad, .screenshotScreen, .screenshot, .screenshotTools,
+                                                  .appWindows, .missionControl, .showDesktop,
                                                   .cut, .copy, .paste, .openApp, .none]
 
     var id: Self { self }
@@ -37,7 +39,8 @@ enum ClickAction: String, MenuAction {
         switch self {
         case .left, .right, .middle: .mouse
         case .back, .forward: .navigate
-        case .launchpad, .screenshot, .appWindows, .missionControl, .showDesktop: .system
+        case .launchpad, .appWindows, .missionControl, .showDesktop: .system
+        case .screenshotScreen, .screenshot, .screenshotTools: .capture
         case .cut, .copy, .paste: .edit
         case .openApp: .app
         case .none: .none
@@ -51,7 +54,9 @@ enum ClickAction: String, MenuAction {
         case .back: "Back"
         case .forward: "Forward"
         case .launchpad: GestureAction.launchpad.title
+        case .screenshotScreen: GestureAction.screenshotScreen.title
         case .screenshot: GestureAction.screenshot.title
+        case .screenshotTools: GestureAction.screenshotTools.title
         case .appWindows: GestureAction.appWindows.title
         case .missionControl: GestureAction.missionControl.title
         case .showDesktop: GestureAction.showDesktop.title
@@ -79,12 +84,15 @@ enum SwipeAction: String, CaseIterable, Identifiable {
 }
 
 enum GestureAction: String, MenuAction {
-    case launchpad, screenshot, appWindows, missionControl, showDesktop, cut, copy, paste, openApp, none
+    // `screenshot` (an area) keeps its name from before there were three.
+    case launchpad, screenshotScreen, screenshot, screenshotTools, appWindows, missionControl, showDesktop, cut, copy, paste,
+         openApp, none
 
     var id: Self { self }
     var group: ActionGroup {
         switch self {
-        case .launchpad, .screenshot, .appWindows, .missionControl, .showDesktop: .system
+        case .launchpad, .appWindows, .missionControl, .showDesktop: .system
+        case .screenshotScreen, .screenshot, .screenshotTools: .capture
         case .cut, .copy, .paste: .edit
         case .openApp: .app
         case .none: .none
@@ -93,7 +101,9 @@ enum GestureAction: String, MenuAction {
     var title: String {
         switch self {
         case .launchpad: "Launchpad"
-        case .screenshot: "Capture screen"
+        case .screenshotScreen: "Capture entire screen (⌘⇧3)"
+        case .screenshot: "Capture area (⌘⇧4)"
+        case .screenshotTools: "Screenshot tools (⌘⇧5)"
         case .appWindows: "App Exposé"
         case .missionControl: "Mission Control"
         case .showDesktop: "Show Desktop"

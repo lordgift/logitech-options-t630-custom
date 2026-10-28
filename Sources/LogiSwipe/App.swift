@@ -320,7 +320,7 @@ struct SettingsView: View {
                 label(action)
             }
         }
-        // Mouse and macOS actions under headers, Edit as a submenu, then Open app and Do nothing.
+        // Mouse and macOS actions under headers, Capture screen and Edit as submenus, then Open app and Do nothing.
         let groups = ActionGroup.allCases.map { group in (group, options.filter { $0.group == group }) }
             .filter { !$0.1.isEmpty }
         return LabeledContent(title) {
@@ -329,8 +329,11 @@ struct SettingsView: View {
                     switch group {
                     case .mouse, .navigate, .system:
                         Section(group.title!) { ForEach(actions) { item($0) } }
-                    case .edit:
+                    case .capture:
                         Divider()
+                        Menu(group.title!) { ForEach(actions) { item($0) } }
+                    case .edit:
+                        if !groups.contains(where: { $0.0 == .capture }) { Divider() }
                         Menu(group.title!) { ForEach(actions) { item($0) } }
                     case .app:
                         Divider()
