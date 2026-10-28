@@ -65,12 +65,30 @@ enum Actions {
         NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: NSWorkspace.OpenConfiguration())
     }
 
+    private static let modifierKeys: [(flag: CGEventFlags, key: CGKeyCode)] =
+        [(.maskCommand, 55), (.maskShift, 56), (.maskAlternate, 58), (.maskControl, 59)]
+
+    /// Presses and releases the modifier keys around `key` like a keyboard does. Apps that track
+    /// modifiers themselves (Figma) otherwise think Command stays down, and scrolling then zooms.
+    /// Fn is only a flag: pressing it can bring up the emoji picker or dictation.
     private static func press(_ key: CGKeyCode, _ flags: CGEventFlags) {
         let src = CGEventSource(stateID: .hidSystemState)
-        for down in [true, false] {
+        let modifiers = modifierKeys.filter { flags.contains($0.flag) }
+        var held = flags.intersection(.maskSecondaryFn)
+        func post(_ key: CGKeyCode, down: Bool) {
             let e = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: down)
-            e?.flags = flags
+            e?.flags = held
             e?.post(tap: .cghidEventTap)
+        }
+        for modifier in modifiers {
+            held.insert(modifier.flag)
+            post(modifier.key, down: true)
+        }
+        post(key, down: true)
+        post(key, down: false)
+        for modifier in modifiers.reversed() {
+            held.remove(modifier.flag)
+            post(modifier.key, down: false)
         }
     }
 }
