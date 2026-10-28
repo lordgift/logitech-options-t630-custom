@@ -27,6 +27,10 @@ final class T630: ObservableObject {
     /// (the mouse itself called some right clicks); left and right clicks all at Y 55 or more.
     /// Y can't tell a middle click in the lower center from a left click there, so it must be up high.
     static let middleZoneX = 30...55, middleMaxY = 53
+    /// The last two fingers must land within this many seconds of each other for a click to be a
+    /// two-finger click; otherwise one is resting on the mouse while the other clicks.
+    /// Measured: two-finger clicks land 0.01–0.08 s apart.
+    static let twoFingerClickWindow = 0.25
 
     @Published private(set) var connected = false
     /// Battery percent, nil until the mouse reports it.
@@ -39,9 +43,15 @@ final class T630: ObservableObject {
     // Current touch.
     private(set) var fingers = 0           // fingers on the surface now
     private(set) var touchMaxFingers = 0   // most fingers seen since the touch began
-    private(set) var firstFingerX = -1     // -1 when nothing touches
-    private(set) var firstFingerY = -1
+    /// The finger that landed last, which is the one clicking when another rests on the mouse.
+    private(set) var pressX = -1           // -1 when nothing touches
+    private(set) var pressY = -1
+    /// Whether the last two fingers landed together, as in a two-finger click.
+    private(set) var fingersLandedTogether = false
+    /// Whether the latest report has a button down, so the fingers of the current click are known.
+    private(set) var pressReported = false
     private var lastPosition: [Int: (x: Int, y: Int)] = [:]
+    private var landed: [Int: Double] = [:]  // slot → system uptime when that finger landed
     private var travelX = 0.0, travelY = 0.0
     private var touchStart = 0.0           // system uptime when the touch began
     private var swiped = false
@@ -145,9 +155,17 @@ final class T630: ObservableObject {
             offset += 4
         }
         fingers = position.count
-        let firstFinger = position.keys.min().map { position[$0]! }
-        firstFingerX = firstFinger?.x ?? -1
-        firstFingerY = firstFinger?.y ?? -1
+        let now = ProcessInfo.processInfo.systemUptime
+        landed = position.keys.reduce(into: [:]) { $0[$1] = landed[$1] ?? now }
+        let order = position.keys.sorted { (landed[$0]!, $0) < (landed[$1]!, $1) }
+        let pressing = order.last.map { position[$0]! }
+        pressX = pressing?.x ?? -1
+        pressY = pressing?.y ?? -1
+        fingersLandedTogether = order.count >= 2
+            && landed[order[order.count - 1]]! - landed[order[order.count - 2]]! <= Self.twoFingerClickWindow
+        let pressed = buttonsDown && !pressReported
+        pressReported = buttonsDown
+        if pressed { EventTap.shared.fingersReported() }
 
         guard !position.isEmpty else {
             SmoothScroller.shared.lift()
@@ -155,7 +173,7 @@ final class T630: ObservableObject {
             return
         }
         // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
-        if lastPosition.isEmpty { touchStart = ProcessInfo.processInfo.systemUptime }
+        if lastPosition.isEmpty { touchStart = now }
         let moved = position.compactMap { slot, p in lastPosition[slot].map { (x: p.x - $0.x, y: p.y - $0.y) } }
         if !moved.isEmpty {
             travelX += Double(moved.map(\.x).reduce(0, +)) / Double(moved.count)
@@ -165,7 +183,7 @@ final class T630: ObservableObject {
         lastPosition = position
 
         let settings = Settings.shared
-        let touchAge = ProcessInfo.processInfo.systemUptime - touchStart
+        let touchAge = now - touchStart
         if settings.enabled && settings.smoothScrolling && touchMaxFingers == 1 && !buttonsDown,
            let finger = position.values.first {
             SmoothScroller.shared.move(x: finger.x, y: finger.y,
