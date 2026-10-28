@@ -90,6 +90,8 @@ final class Settings: ObservableObject {
     @Published var customSpeed: Bool { didSet { save(customSpeed, "customSpeed"); T630.shared.applyTrackingSpeed() } }
     /// Same scale as System Settings → Mouse → Tracking speed, where Fast is 3.
     @Published var trackingSpeed: Double { didSet { save(trackingSpeed, "trackingSpeed"); T630.shared.applyTrackingSpeed() } }
+    /// System Settings' Fast, its fastest pointer speed.
+    static let systemFastSpeed = 3.0
     /// Flips the T630's scroll direction.
     @Published var reverseScrolling: Bool { didSet { save(reverseScrolling, "reverseScrolling") } }
     /// Scroll from the finger position like a trackpad, instead of the mouse's coarse wheel steps.

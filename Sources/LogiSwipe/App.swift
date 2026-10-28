@@ -124,11 +124,43 @@ struct SettingsView: View {
         Section("Pointer") {
             Toggle("Custom tracking speed", isOn: $settings.customSpeed)
             if settings.customSpeed {
-                Slider(value: $settings.trackingSpeed, in: 0...6) {
-                    Text(String(format: "%.1f", settings.trackingSpeed))
-                } minimumValueLabel: { Text("Slow") } maximumValueLabel: { Text("Fast") }
-                Text("3.0 is Fast in System Settings.").font(.caption).foregroundStyle(.secondary)
+                speedSlider(String(format: "%.1f", settings.trackingSpeed), $settings.trackingSpeed,
+                            in: 0...Self.maxTrackingSpeed, mark: Settings.systemFastSpeed)
+                Text("The mark is Fast in System Settings (3.0).")
+                    .font(.caption).foregroundStyle(.secondary)
             }
+        }
+    }
+
+    /// macOS takes speeds past its own fastest, 3.0.
+    private static let maxTrackingSpeed = 6.0
+
+    /// A Slow–Fast slider, with a tick on its track at `mark`.
+    private func speedSlider(_ title: String, _ value: Binding<Double>, in range: ClosedRange<Double>,
+                             mark: Double? = nil) -> some View {
+        LabeledContent(title) {
+            HStack(spacing: 6) {
+                Text("Slow")
+                Slider(value: value, in: range)
+                    .labelsHidden()
+                    .background {
+                        if let mark {
+                            GeometryReader { g in
+                                let knob = 10.0  // the track's ends are half a knob in from the slider's sides
+                                Capsule()
+                                    .fill(.secondary)
+                                    .frame(width: 2, height: 12)
+                                    .position(x: knob + (g.size.width - 2 * knob) * (mark - range.lowerBound)
+                                                / (range.upperBound - range.lowerBound),
+                                              y: g.size.height / 2)
+                            }
+                            .allowsHitTesting(false)
+                        }
+                    }
+                Text("Fast")
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -136,9 +168,7 @@ struct SettingsView: View {
         Section("Scrolling") {
             Toggle("Smooth scrolling", isOn: $settings.smoothScrolling)
             if settings.smoothScrolling {
-                Slider(value: $settings.scrollSpeed, in: 0.25...3) {
-                    Text(String(format: "%.2g×", settings.scrollSpeed))
-                } minimumValueLabel: { Text("Slow") } maximumValueLabel: { Text("Fast") }
+                speedSlider(String(format: "%.2g×", settings.scrollSpeed), $settings.scrollSpeed, in: 0.25...3, mark: 1)
             }
             Toggle("Reverse scroll direction", isOn: $settings.reverseScrolling)
             Text("Smooth scrolling follows your finger like a trackpad, with momentum.")

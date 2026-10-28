@@ -71,7 +71,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 
 | Setting | Options | Default |
 |---|---|---|
-| **Custom tracking speed** | `0.0` – `6.0` (macOS "Fast" is `3.0`) | Off (uses system speed) |
+| **Custom tracking speed** | `0.0` – `6.0`, marked at macOS's fastest, "Fast" (`3.0`) | Off (uses system speed) |
 | **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
 | **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
 | **Right click** | *(same as above)* | Right click |
