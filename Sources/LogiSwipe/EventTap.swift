@@ -15,6 +15,10 @@ final class EventTap: ObservableObject {
     private static let fingerWait = 0.05
     /// eventSourceUserData of the clicks posted after waiting, so the tap lets them through.
     private static let repostedMark: Int64 = 0x7630
+    /// A middle click held back until it is let go (a click) or held for `holdTime` (Hold middle click).
+    private var holding: (down: CGEvent, timer: DispatchWorkItem)?
+    /// Seconds a middle click must be held, and points it may move meanwhile, to be a hold.
+    private static let holdTime = 0.5, holdSlop = 6.0
 
     /// Needs Accessibility; keeps retrying until it is granted.
     func start() {
@@ -72,10 +76,13 @@ final class EventTap: ObservableObject {
         let events = waiting
         waiting = []
         for event in events {
-            let remapped = event.type == .leftMouseDown || event.type == .rightMouseDown ? click(event) : follow(event)
-            remapped?.setIntegerValueField(.eventSourceUserData, value: Self.repostedMark)
-            remapped?.post(tap: .cgSessionEventTap)
+            repost(event.type == .leftMouseDown || event.type == .rightMouseDown ? click(event) : follow(event))
         }
+    }
+
+    private func repost(_ event: CGEvent?) {
+        event?.setIntegerValueField(.eventSourceUserData, value: Self.repostedMark)
+        event?.post(tap: .cgSessionEventTap)
     }
 
     private func click(_ event: CGEvent) -> CGEvent? {
@@ -91,13 +98,41 @@ final class EventTap: ObservableObject {
         let action = Settings.shared.clickAction(for: kind)
         log.info("click: \(String(describing: kind), privacy: .public) at \(x, privacy: .public),\(y, privacy: .public), \(t630.fingers, privacy: .public) fingers → \(action.rawValue, privacy: .public)")
         heldAction = action
+        let hold = Settings.shared.middleClickHold
+        if kind == .middle && hold != .none {
+            let timer = DispatchWorkItem { [weak self] in self?.held(hold) }
+            holding = (event.copy()!, timer)
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.holdTime, execute: timer)
+            return nil
+        }
         return remap(event, to: action, phase: 0, app: Settings.shared.apps[kind.key])
+    }
+
+    /// The held-back middle click was held down long enough.
+    private func held(_ action: GestureAction) {
+        guard holding != nil else { return }
+        holding = nil
+        heldAction = ClickAction.none  // its drags and release do nothing
+        log.info("click: middle held → \(action.rawValue, privacy: .public)")
+        Actions.perform(action, app: Settings.shared.apps[Gesture.middleClickHold.rawValue])
     }
 
     /// The drags and release of a click follow its action.
     private func follow(_ event: CGEvent) -> CGEvent? {
         guard let action = heldAction else { return event }
         let up = event.type == .leftMouseUp || event.type == .rightMouseUp
+        if let holding {
+            let start = holding.down.location, p = event.location
+            if !up && hypot(p.x - start.x, p.y - start.y) <= Self.holdSlop { return nil }
+            // Let go or dragged before the hold time: a middle click after all. Post the press and
+            // this event ourselves, so they arrive in order.
+            holding.timer.cancel()
+            self.holding = nil
+            repost(remap(holding.down, to: action, phase: 0, app: Settings.shared.apps[ClickKind.middle.key]))
+            if up { heldAction = nil }
+            repost(remap(event, to: action, phase: up ? 2 : 1))
+            return nil
+        }
         if up { heldAction = nil }
         return remap(event, to: action, phase: up ? 2 : 1)
     }

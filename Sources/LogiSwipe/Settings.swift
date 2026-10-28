@@ -77,7 +77,7 @@ enum GestureAction: String, MenuAction {
 
 /// The gestures that perform a `GestureAction`; the raw value is the setting's UserDefaults key.
 enum Gesture: String {
-    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown
+    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown, middleClickHold
 }
 
 /// User settings, saved in UserDefaults. Read from the event tap and HID callbacks,
@@ -111,6 +111,8 @@ final class Settings: ObservableObject {
     @Published var twoFingerDoubleTap: GestureAction { didSet { save(twoFingerDoubleTap.rawValue, "twoFingerDoubleTap") } }
     @Published var threeFingerSwipeUp: GestureAction { didSet { save(threeFingerSwipeUp.rawValue, "threeFingerSwipeUp") } }
     @Published var threeFingerSwipeDown: GestureAction { didSet { save(threeFingerSwipeDown.rawValue, "threeFingerSwipeDown") } }
+    /// Holding a middle click; Do nothing makes middle clicks go through without waiting.
+    @Published var middleClickHold: GestureAction { didSet { save(middleClickHold.rawValue, "middleClickHold") } }
     /// Path of the app each "Open app" action opens, keyed by its setting's UserDefaults key.
     @Published var apps: [String: String] { didSet { save(apps, "apps") } }
 
@@ -144,6 +146,7 @@ final class Settings: ObservableObject {
         twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .paste
         threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
         threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .none
+        middleClickHold = Self.load(defaults, "middleClickHold") ?? .screenshot
         apps = defaults.dictionary(forKey: "apps") as? [String: String] ?? [:]
     }
 
@@ -166,6 +169,7 @@ final class Settings: ObservableObject {
         case .twoFingerDoubleTap: twoFingerDoubleTap
         case .threeFingerSwipeUp: threeFingerSwipeUp
         case .threeFingerSwipeDown: threeFingerSwipeDown
+        case .middleClickHold: middleClickHold
         }
     }
 

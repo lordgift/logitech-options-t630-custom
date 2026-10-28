@@ -76,6 +76,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
 | **Right click** | *(same as above)* | Right click |
 | **Middle click** (press the upper center) | *(same as above)* | Middle click |
+| **Hold middle click** (½ s) | Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Capture screen |
 | **Two-finger click** | Middle click, Launchpad, Capture screen, App windows, Mission Control, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
 | **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Back / Forward |
 | **Swipe with 2 fingers** | Scroll freely (any direction), Switch desktops, Back / Forward, Do nothing | Scroll freely |

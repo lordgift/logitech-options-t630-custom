@@ -151,6 +151,7 @@ struct SettingsView: View {
             actionPicker("Left click", $settings.leftClick, key: ClickKind.left.key)
             actionPicker("Right click", $settings.rightClick, key: ClickKind.right.key)
             actionPicker("Middle click", $settings.middleClick, key: ClickKind.middle.key)
+            actionPicker("Hold middle click", $settings.middleClickHold, key: Gesture.middleClickHold.rawValue)
             actionPicker("Two-finger click", $settings.twoFingerClick, key: ClickKind.twoFinger.key,
                          options: ClickAction.twoFingerOptions)
         }
