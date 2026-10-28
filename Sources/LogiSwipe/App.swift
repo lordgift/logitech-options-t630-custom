@@ -178,8 +178,12 @@ struct SettingsView: View {
             if settings.smoothScrolling {
                 speedSlider(String(format: "%.2g×", settings.scrollSpeed), $settings.scrollSpeed, in: 0.25...3, mark: 1)
             }
+            Text("Follows your finger like a trackpad, with momentum.")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("Reverse scroll direction", isOn: $settings.reverseScrolling)
-            Text("Smooth scrolling follows your finger like a trackpad, with momentum.")
+            Text(settings.reverseScrolling
+                 ? "Your mouse scrolls the other way from your Mac's Natural scrolling. The trackpad is unchanged."
+                 : "Your mouse follows your Mac's Natural scrolling setting, like the trackpad.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
