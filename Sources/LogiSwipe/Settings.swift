@@ -128,14 +128,13 @@ final class Settings: ObservableObject {
         rightClick = Self.load(defaults, "rightClick") ?? .right
         middleClick = Self.load(defaults, "middleClick") ?? .middle
         twoFingerClick = (Self.load(defaults, "twoFingerClick") as ClickAction?)
-            .flatMap { ClickAction.twoFingerOptions.contains($0) ? $0 : nil } ?? .none
+            .flatMap { ClickAction.twoFingerOptions.contains($0) ? $0 : nil } ?? .copy
         oneFingerSwipe = Self.load(defaults, "oneFingerSwipe") ?? .scroll
         twoFingerSwipe = Self.load(defaults, "twoFingerSwipe") ?? .desktops
-        oneFingerDoubleTap = Self.load(defaults, "oneFingerDoubleTap") ?? .none
-        twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .none
-        // Same as a Mac trackpad.
+        oneFingerDoubleTap = Self.load(defaults, "oneFingerDoubleTap") ?? .appWindows
+        twoFingerDoubleTap = Self.load(defaults, "twoFingerDoubleTap") ?? .paste
         threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
-        threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .appWindows
+        threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .none
         apps = defaults.dictionary(forKey: "apps") as? [String: String] ?? [:]
     }
 
