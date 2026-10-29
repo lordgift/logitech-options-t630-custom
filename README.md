@@ -27,7 +27,7 @@ LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only t
 - **1-, 2- & 3-Finger Swipes**: Switch between desktops (3 fingers by default), go Back / Forward in browsers, or scroll sideways.
 - **Pinch to Zoom**: Pinch two fingers apart or together to zoom in or out.
 - **3-Finger Swipes Up & Down**: Open Mission Control or show the current app's windows, like a Mac trackpad.
-- **4-Finger Spread**: Spread your thumb and three fingers to show the desktop, and pinch them back to bring the windows back, like a Mac trackpad.
+- **4-Finger Spread & Pinch**: Spread your thumb and three fingers to show the desktop, and pinch them back to bring the windows back. Pinch them together anywhere else to open Launchpad, like a Mac trackpad.
 - **Double Tap**: Double-tap with 1 or 2 fingers to open Launchpad, capture the screen, show the current app's windows, or open Mission Control.
 - **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the upper center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
 - **Separate Scroll Direction**: Reverse scrolling just for the T630 without flipping your Mac's trackpad.
@@ -88,6 +88,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Swipe down with 3 fingers** | *(same as above)* | Do nothing |
 | **Pinch to zoom** | Pinch 2 fingers to zoom in and out smoothly, like a trackpad | On |
 | **4 fingers spread** (pinch back to undo Show Desktop) | *(same as Double-tap)* | Show Desktop |
+| **4 fingers pinch** | *(same as Double-tap)* | Launchpad |
 | **Launch at login** | On / Off | Off |
 
 **Restore Defaults…** puts every setting back to the default above, and forgets the apps chosen for Open app. Launch at login stays as it is.

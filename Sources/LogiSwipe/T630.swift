@@ -82,10 +82,11 @@ final class T630: ObservableObject {
     /// With four or more fingers the mouse now and then sends a stray empty report between two with
     /// fingers, so an empty report then only ends the touch if the next one is empty too.
     private var strayEmpty = false
-    /// The fingers' least and most average distance from their center since there were this many (4 or more).
-    private var spreadRange: (fingers: Int, least: Double, most: Double)?
-    /// A four-finger spread showed the desktop, so pinching four fingers together brings the windows back.
-    private var desktopShown = false
+    /// The fingers' least and most average distance from their center since there were this many (4 or more),
+    /// and whether they have already spread (`true`) or pinched (`false`) during this 4-finger touch.
+    private var spreadRange: (fingers: Int, least: Double, most: Double, moved: Bool?)?
+    /// The state Show Desktop was just switched to, used for 0.35 s until WindowManager's overlay window catches up.
+    private var desktopToggle: (shown: Bool, at: Double)?
 
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     private var devices = Set<IOHIDDevice>()  // with an input report callback registered
@@ -232,7 +233,12 @@ final class T630: ObservableObject {
 
         let settings = Settings.shared
         let touchAge = now - touchStart
-        if settings.enabled && position.count >= 4 && !buttonsDown { spread(position) }
+        if buttonsDown { desktopToggle = nil }
+        if settings.enabled && position.count >= 4 && !buttonsDown {
+            spread(position, now: now)
+        } else {
+            spreadRange = nil
+        }
         if settings.enabled && touchMaxFingers == 2 && moved.count == 2 && !buttonsDown {
             let fingers = Array(position.values)
             pinch(distance: hypot(Double(fingers[0].x - fingers[1].x), Double(fingers[0].y - fingers[1].y)), dx: dx, dy: dy)
@@ -311,30 +317,45 @@ final class T630: ObservableObject {
         Actions.magnify(0, phase: 4)
     }
 
-    /// Four or more fingers spreading apart, like showing the desktop on a trackpad, and pinching back
-    /// together after Show Desktop to bring the windows back: once per touch.
-    private func spread(_ position: [Int: (x: Int, y: Int)]) {
+    /// Four or more fingers spreading apart, like showing the desktop on a trackpad, or pinching together,
+    /// like opening Launchpad. While Show Desktop is on, a pinch brings the windows back instead.
+    private func spread(_ position: [Int: (x: Int, y: Int)], now: Double) {
         let points = position.values.map { (x: Double($0.x), y: Double($0.y)) }
         let cx = points.map(\.x).reduce(0, +) / Double(points.count), cy = points.map(\.y).reduce(0, +) / Double(points.count)
         let spread = points.map { hypot($0.x - cx, $0.y - cy) }.reduce(0, +) / Double(points.count)
         guard let range = spreadRange, range.fingers == position.count else {
-            spreadRange = (position.count, spread, spread)  // a finger landed or lifted: measure from here
+            spreadRange = (position.count, spread, spread, nil)  // a finger landed or lifted: measure from here
             return
         }
-        spreadRange = (range.fingers, min(range.least, spread), max(range.most, spread))
-        guard !swiped else { return }
+        let least = min(range.least, spread), most = max(range.most, spread)
+        spreadRange = (range.fingers, least, most, range.moved)
         let settings = Settings.shared
-        let action = settings.gestureAction(for: .fourFingerSpread)
-        if spread - range.least >= Self.spreadDistance && !desktopShown {
+        // Asked each time: clicking the desktop or opening an app also brings the windows back. Only once a
+        // spread or pinch is far enough, since asking the window server takes ~1 ms.
+        func desktopShown() -> Bool {
+            desktopToggle.map { now - $0.at < 0.35 ? $0.shown : Actions.showingDesktop } ?? Actions.showingDesktop
+        }
+        if spread - least >= Self.spreadDistance && range.moved != true {
             swiped = true
-            desktopShown = action == .showDesktop
-            log.info("spread: \(position.count, privacy: .public) fingers, \(range.least, privacy: .public) → \(spread, privacy: .public) → \(action.rawValue, privacy: .public)")
+            spreadRange = (position.count, spread, spread, true)
+            let action = settings.gestureAction(for: .fourFingerSpread)
+            guard !(action == .showDesktop && desktopShown()) else { return }
+            if action == .showDesktop { desktopToggle = (true, now) }
+            log.info("spread: \(position.count, privacy: .public) fingers, \(least, privacy: .public) → \(spread, privacy: .public) → \(action.rawValue, privacy: .public)")
             Actions.perform(action, app: settings.apps[Gesture.fourFingerSpread.rawValue])
-        } else if range.most - spread >= Self.spreadDistance && desktopShown {
+        } else if most - spread >= Self.spreadDistance && range.moved != false {
             swiped = true
-            desktopShown = false
-            log.info("pinch: \(position.count, privacy: .public) fingers, \(range.most, privacy: .public) → \(spread, privacy: .public) → windows back")
-            Actions.perform(GestureAction.showDesktop)
+            spreadRange = (position.count, spread, spread, false)
+            if desktopShown() {
+                desktopToggle = (false, now)
+                log.info("pinch: \(position.count, privacy: .public) fingers, \(most, privacy: .public) → \(spread, privacy: .public) → windows back")
+                Actions.perform(GestureAction.showDesktop)
+            } else {
+                let action = settings.gestureAction(for: .fourFingerPinch)
+                if action == .showDesktop { desktopToggle = (true, now) }
+                log.info("pinch: \(position.count, privacy: .public) fingers, \(most, privacy: .public) → \(spread, privacy: .public) → \(action.rawValue, privacy: .public)")
+                Actions.perform(action, app: settings.apps[Gesture.fourFingerPinch.rawValue])
+            }
         }
     }
 

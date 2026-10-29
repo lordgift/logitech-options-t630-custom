@@ -118,7 +118,7 @@ enum GestureAction: String, MenuAction {
 
 /// The gestures that perform a `GestureAction`; the raw value is the setting's UserDefaults key.
 enum Gesture: String {
-    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown, fourFingerSpread, middleClickHold
+    case oneFingerDoubleTap, twoFingerDoubleTap, threeFingerSwipeUp, threeFingerSwipeDown, fourFingerSpread, fourFingerPinch, middleClickHold
 }
 
 /// User settings, saved in UserDefaults. Read from the event tap and HID callbacks,
@@ -156,6 +156,9 @@ final class Settings: ObservableObject {
     @Published var threeFingerSwipeDown: GestureAction { didSet { save(threeFingerSwipeDown.rawValue, "threeFingerSwipeDown") } }
     /// Spreading four or more fingers apart, as a trackpad shows the desktop.
     @Published var fourFingerSpread: GestureAction { didSet { save(fourFingerSpread.rawValue, "fourFingerSpread") } }
+    /// Pinching four or more fingers together, as a trackpad opens Launchpad. While Show Desktop is on,
+    /// the pinch brings the windows back instead.
+    @Published var fourFingerPinch: GestureAction { didSet { save(fourFingerPinch.rawValue, "fourFingerPinch") } }
     /// Holding a middle click; Do nothing makes middle clicks go through without waiting.
     @Published var middleClickHold: GestureAction { didSet { save(middleClickHold.rawValue, "middleClickHold") } }
     /// Path of the app each "Open app" action opens, keyed by its setting's UserDefaults key.
@@ -192,6 +195,7 @@ final class Settings: ObservableObject {
         threeFingerSwipeUp = Self.load(defaults, "threeFingerSwipeUp") ?? .missionControl
         threeFingerSwipeDown = Self.load(defaults, "threeFingerSwipeDown") ?? .none
         fourFingerSpread = Self.load(defaults, "fourFingerSpread") ?? .showDesktop
+        fourFingerPinch = Self.load(defaults, "fourFingerPinch") ?? .launchpad
         middleClickHold = Self.load(defaults, "middleClickHold") ?? .screenshot
         apps = defaults.dictionary(forKey: "apps") as? [String: String] ?? [:]
     }
@@ -222,6 +226,7 @@ final class Settings: ObservableObject {
         threeFingerSwipeUp = fresh.threeFingerSwipeUp
         threeFingerSwipeDown = fresh.threeFingerSwipeDown
         fourFingerSpread = fresh.fourFingerSpread
+        fourFingerPinch = fresh.fourFingerPinch
         middleClickHold = fresh.middleClickHold
         apps = fresh.apps
     }
@@ -231,7 +236,7 @@ final class Settings: ObservableObject {
         "enabled", "customSpeed", "trackingSpeed", "reverseScrolling", "smoothScrolling", "pinchToZoom", "scrollSpeed",
         "leftClick", "rightClick", "middleClick", "twoFingerClick", "oneFingerSwipe", "twoFingerSwipe", "threeFingerSwipe",
         "oneFingerDoubleTap", "twoFingerDoubleTap", "threeFingerSwipeUp", "threeFingerSwipeDown", "fourFingerSpread",
-        "middleClickHold", "apps",
+        "fourFingerPinch", "middleClickHold", "apps",
     ]
 
     func clickAction(for kind: ClickKind) -> ClickAction {
@@ -254,6 +259,7 @@ final class Settings: ObservableObject {
         case .threeFingerSwipeUp: threeFingerSwipeUp
         case .threeFingerSwipeDown: threeFingerSwipeDown
         case .fourFingerSpread: fourFingerSpread
+        case .fourFingerPinch: fourFingerPinch
         case .middleClickHold: middleClickHold
         }
     }

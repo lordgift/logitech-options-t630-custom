@@ -85,6 +85,15 @@ enum Actions {
         }
     }
 
+    /// Whether Show Desktop has moved the windows aside: the Dock's WindowManager covers each screen
+    /// with a ShowDesktopOverlay window (layer 18) meanwhile. Its owner is readable without Screen Recording.
+    static var showingDesktop: Bool {
+        let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
+        return windows.contains {
+            $0[kCGWindowOwnerName as String] as? String == "WindowManager" && $0[kCGWindowLayer as String] as? Int == 18
+        }
+    }
+
     private static func open(_ path: String) {
         NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: NSWorkspace.OpenConfiguration())
     }
