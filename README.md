@@ -21,19 +21,38 @@ Logitech discontinued **Logi Options**, and the newer **Logi Options+** does not
 
 LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only touches events from your T630, leaving your trackpad and other mice completely alone.
 
-## Features
+## Features & Settings
 
-- **Trackpad-Style Scrolling**: Scroll with one finger, or with two fingers in any direction, with momentum.
-- **1-, 2- & 3-Finger Swipes**: Switch between desktops (3 fingers by default), go Back / Forward in browsers, or scroll sideways.
-- **Pinch to Zoom**: Pinch two fingers apart or together to zoom in or out.
-- **3-Finger Swipes Up & Down**: Open Mission Control or show the current app's windows, like a Mac trackpad.
-- **4-Finger Spread & Pinch**: Spread your thumb and three fingers to show the desktop, and pinch them back to bring the windows back. Pinch them together anywhere else to open Launchpad, like a Mac trackpad.
-- **Double Tap**: Double-tap with 1 or 2 fingers to open Launchpad, capture the screen, show the current app's windows, or open Mission Control.
-- **Custom Clicks**: Customize Left click, Right click, Middle click (pressing anywhere along the center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
-- **Separate Scroll Direction**: Reverse scrolling just for the T630 without flipping your Mac's trackpad.
-- **Custom Pointer Speed**: Set the T630's pointer speed independently—even faster than the maximum setting in macOS System Settings.
-- **Battery Level**: See the T630's battery percentage in the menu, which macOS doesn't show.
-- **Launch at Login**: Lives quietly in your menu bar and starts automatically when you log in.
+Click the mouse icon in the menu bar. Settings only apply to the T630. Other mice and the trackpad are left alone.
+
+<img src="docs/settings.png" alt="LogiSwipe settings panel" width="680">
+
+<img src="docs/click-zones.png" alt="T630 click zones" width="680">
+
+| Feature / Setting | Options | Default |
+|---|---|---|
+| **Battery level** | Shown in the menu bar icon and settings panel | — |
+| **Custom tracking speed** | `0.0` – `6.0`, marked at macOS's fastest, "Fast" (`3.0`) | On, starting at your system speed |
+| **Smooth scrolling** | Trackpad-style scrolling with momentum (`0.25×` – `3×` speed) | On (`1×`) |
+| **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
+| **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
+| **Right click** | *(same as above)* | Right click |
+| **Middle click** (press along the center) | *(same as above)* | Middle click |
+| **Hold middle click** (½ s) | Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Capture area (⌘⇧4) |
+| **Two-finger click** | Middle click, Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
+| **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Back / Forward |
+| **Swipe with 2 fingers** | Scroll freely (any direction), Switch desktops, Back / Forward, Do nothing | Scroll freely |
+| **Swipe with 3 fingers** (left / right) | Switch desktops, Back / Forward, Do nothing | Switch desktops |
+| **Swipe up with 3 fingers** | *(same as Hold middle click)* | Mission Control |
+| **Swipe down with 3 fingers** | *(same as Hold middle click)* | Do nothing |
+| **Double-tap with 1 finger** | Launchpad, Capture screen → Entire screen (⌘⇧3) / Area (⌘⇧4) / Screenshot tools (⌘⇧5), App Exposé (like ⌃↓), Mission Control, Show Desktop (like F11), Edit → Cut / Copy / Paste, Open app… (pick any app), Do nothing | App Exposé |
+| **Double-tap with 2 fingers** | *(same as above)* | Paste |
+| **4 fingers spread** (pinch back to undo Show Desktop) | *(same as Double-tap)* | Show Desktop |
+| **4 fingers pinch** | *(same as Double-tap)* | Launchpad |
+| **Pinch to zoom** | Pinch 2 fingers to zoom in and out smoothly, like a trackpad | On |
+| **Launch at login** | On / Off | Off |
+
+**Restore Defaults…** puts every setting back to the default above, and forgets the apps chosen for Open app. Launch at login stays as it is.
 
 ## Installation
 
@@ -63,35 +82,6 @@ This builds and installs `/Applications/LogiSwipe.app`.
    - **Input Monitoring** (so LogiSwipe can detect your finger touches on the T630)
    - **Accessibility** (so LogiSwipe can perform custom clicks, scrolls, and shortcuts)
 3. **Quit and reopen LogiSwipe** from the menu bar icon. Both permissions should now say **Allowed**.
-
-## Settings
-
-Click the mouse icon in the menu bar. Settings only apply to the T630. Other mice and the trackpad are left alone.
-
-<img src="docs/settings.png" alt="LogiSwipe settings panel" width="680">
-
-| Setting | Options | Default |
-|---|---|---|
-| **Custom tracking speed** | `0.0` – `6.0`, marked at macOS's fastest, "Fast" (`3.0`) | On, starting at your system speed |
-| **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
-| **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
-| **Right click** | *(same as above)* | Right click |
-| **Middle click** (press along the center) | *(same as above)* | Middle click |
-| **Hold middle click** (½ s) | Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Capture area (⌘⇧4) |
-| **Two-finger click** | Middle click, Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
-| **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Back / Forward |
-| **Swipe with 2 fingers** | Scroll freely (any direction), Switch desktops, Back / Forward, Do nothing | Scroll freely |
-| **Swipe with 3 fingers** (left / right) | Switch desktops, Back / Forward, Do nothing | Switch desktops |
-| **Double-tap with 1 finger** | Launchpad, Capture screen → Entire screen (⌘⇧3) / Area (⌘⇧4) / Screenshot tools (⌘⇧5), App Exposé (like ⌃↓), Mission Control, Show Desktop (like F11), Edit → Cut / Copy / Paste, Open app… (pick any app), Do nothing | App Exposé |
-| **Double-tap with 2 fingers** | *(same as above)* | Paste |
-| **Swipe up with 3 fingers** | *(same as above)* | Mission Control |
-| **Swipe down with 3 fingers** | *(same as above)* | Do nothing |
-| **Pinch to zoom** | Pinch 2 fingers to zoom in and out smoothly, like a trackpad | On |
-| **4 fingers spread** (pinch back to undo Show Desktop) | *(same as Double-tap)* | Show Desktop |
-| **4 fingers pinch** | *(same as Double-tap)* | Launchpad |
-| **Launch at login** | On / Off | Off |
-
-**Restore Defaults…** puts every setting back to the default above, and forgets the apps chosen for Open app. Launch at login stays as it is.
 
 ## Tips & Troubleshooting
 
