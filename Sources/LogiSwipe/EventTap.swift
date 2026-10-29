@@ -92,7 +92,7 @@ final class EventTap: ObservableObject {
         // mouse while another clicks doesn't make it a two-finger click.
         let x = t630.pressX, y = t630.pressY
         let kind: ClickKind = t630.fingersLandedTogether ? .twoFinger
-            : T630.middleZoneX.contains(x) && y >= 0 && y <= T630.middleMaxY ? .middle
+            : T630.middleZoneX.contains(x) ? .middle
             : x >= 0 ? (x >= T630.rightSideX ? .right : .left)
             : event.type == .rightMouseDown ? .right : .left
         let action = Settings.shared.clickAction(for: kind)

@@ -29,7 +29,7 @@ LogiSwipe replaces Logi Options for the T630 in a tiny menu bar app—and only t
 - **3-Finger Swipes Up & Down**: Open Mission Control or show the current app's windows, like a Mac trackpad.
 - **4-Finger Spread & Pinch**: Spread your thumb and three fingers to show the desktop, and pinch them back to bring the windows back. Pinch them together anywhere else to open Launchpad, like a Mac trackpad.
 - **Double Tap**: Double-tap with 1 or 2 fingers to open Launchpad, capture the screen, show the current app's windows, or open Mission Control.
-- **Custom Clicks**: Customize Left click, Right click, Middle click (pressing the upper center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
+- **Custom Clicks**: Customize Left click, Right click, Middle click (pressing anywhere along the center of the mouse), and Two-finger click. LogiSwipe decides which one from where your finger is, instead of the mouse's own guess.
 - **Separate Scroll Direction**: Reverse scrolling just for the T630 without flipping your Mac's trackpad.
 - **Custom Pointer Speed**: Set the T630's pointer speed independently—even faster than the maximum setting in macOS System Settings.
 - **Battery Level**: See the T630's battery percentage in the menu, which macOS doesn't show.
@@ -76,7 +76,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 | **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
 | **Left click** | Left click, Right click, Middle click, Back, Forward, Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Left click |
 | **Right click** | *(same as above)* | Right click |
-| **Middle click** (press the upper center) | *(same as above)* | Middle click |
+| **Middle click** (press along the center) | *(same as above)* | Middle click |
 | **Hold middle click** (½ s) | Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Capture area (⌘⇧4) |
 | **Two-finger click** | Middle click, Launchpad, Capture screen → Entire screen / Area / Screenshot tools, App Exposé, Mission Control, Show Desktop, Edit → Cut / Copy / Paste, Open app…, Do nothing | Copy |
 | **Swipe with 1 finger** | Scroll sideways, Switch desktops, Back / Forward, Do nothing | Back / Forward |

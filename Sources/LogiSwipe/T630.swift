@@ -24,10 +24,9 @@ final class T630: ObservableObject {
     /// Presses at or right of this X are right clicks, left of it left clicks. Measured: left
     /// clicks land at X 6–43 (the mouse itself called one at 43 a right click), right clicks at 62–76.
     static let rightSideX = 53
-    /// A press in the upper center is a middle click. Measured: middle clicks at X 34–48, Y 39–52
-    /// (the mouse itself called some right clicks); left and right clicks all at Y 55 or more.
-    /// Y can't tell a middle click in the lower center from a left click there, so it must be up high.
-    static let middleZoneX = 30...55, middleMaxY = 53
+    /// A press in the center, from top to bottom, is a middle click. Measured: middle clicks at X 34–48
+    /// (the mouse itself called some right clicks); left clicks at X 6–43, so left clicks there are middle.
+    static let middleZoneX = 30...55
     /// The last two fingers must land within this many seconds of each other for a click to be a
     /// two-finger click; otherwise one is resting on the mouse while the other clicks.
     /// Measured: two-finger clicks land 0.01–0.08 s apart.
