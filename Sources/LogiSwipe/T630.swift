@@ -41,8 +41,9 @@ final class T630: ObservableObject {
     /// A pinch zooms in by 1.0 (twice the size) when the fingers spread this many units further apart.
     static let pinchScale = 40.0
     /// Four or more fingers are spread apart (or pinched together) once their average distance from their
-    /// center grows (or shrinks) by this many units. Measured spreads grow it 6–10 units, from 21–32.
-    static let spreadDistance = 5.0
+    /// center grows (or shrinks) by this many units in all, counted while at least three are down. Measured
+    /// spreads and pinches change it 7.5–15 units; all four are down for only 0.07–0.14 s of that.
+    static let spreadDistance = 6.0
 
     @Published private(set) var connected = false
     /// Battery percent, nil until the mouse reports it.
@@ -81,9 +82,9 @@ final class T630: ObservableObject {
     /// With four or more fingers the mouse now and then sends a stray empty report between two with
     /// fingers, so an empty report then only ends the touch if the next one is empty too.
     private var strayEmpty = false
-    /// The fingers' least and most average distance from their center since there were this many (4 or more),
-    /// and whether they have already spread (`true`) or pinched (`false`) during this 4-finger touch.
-    private var spreadRange: (fingers: Int, least: Double, most: Double, moved: Bool?)?
+    /// How much the fingers' average distance from their center has grown during this touch (`now`), its
+    /// least and most since the last spread or pinch, and whether that was a spread (`true`) or pinch (`false`).
+    private var spreadTravel: (now: Double, least: Double, most: Double, moved: Bool?)?
     /// The state Show Desktop was just switched to, used for 0.35 s until WindowManager's overlay window catches up.
     private var desktopToggle: (shown: Bool, at: Double)?
 
@@ -217,7 +218,7 @@ final class T630: ObservableObject {
             endPinch()
             if !lastPosition.isEmpty { touchEnded(at: now) }
             lastPosition = [:]; travelX = 0; travelY = 0; touchMaxFingers = 0; swiped = false; touchPressed = false
-            pinching = nil; pinchStart = nil; pinchTravel = (0, 0); spreadRange = nil
+            pinching = nil; pinchStart = nil; pinchTravel = (0, 0); spreadTravel = nil
             return
         }
         // Only fingers present in both reports count, so a finger landing or lifting doesn't jump.
@@ -228,15 +229,15 @@ final class T630: ObservableObject {
         travelX += dx
         travelY += dy
         touchMaxFingers = max(touchMaxFingers, position.count)
+        let previous = lastPosition
         lastPosition = position
 
         let settings = Settings.shared
         let touchAge = now - touchStart
-        if buttonsDown { desktopToggle = nil }
-        if settings.enabled && position.count >= 4 && !buttonsDown {
-            spread(position, now: now)
-        } else {
-            spreadRange = nil
+        if buttonsDown {
+            desktopToggle = nil; spreadTravel = nil
+        } else if settings.enabled {
+            spread(position, from: previous, now: now)
         }
         if settings.enabled && touchMaxFingers == 2 && moved.count == 2 && !buttonsDown {
             let fingers = Array(position.values)
@@ -318,41 +319,47 @@ final class T630: ObservableObject {
 
     /// Four or more fingers spreading apart, like showing the desktop on a trackpad, or pinching together,
     /// like opening Launchpad. While Show Desktop is on, a pinch brings the windows back instead.
-    private func spread(_ position: [Int: (x: Int, y: Int)], now: Double) {
-        let points = position.values.map { (x: Double($0.x), y: Double($0.y)) }
-        let cx = points.map(\.x).reduce(0, +) / Double(points.count), cy = points.map(\.y).reduce(0, +) / Double(points.count)
-        let spread = points.map { hypot($0.x - cx, $0.y - cy) }.reduce(0, +) / Double(points.count)
-        guard let range = spreadRange, range.fingers == position.count else {
-            spreadRange = (position.count, spread, spread, nil)  // a finger landed or lifted: measure from here
-            return
+    /// The thumb lands last and lifts first, and the fingers are already moving meanwhile, so the spread
+    /// counts from the first report with three fingers down to the last, comparing only the fingers
+    /// in both reports so one landing or lifting doesn't jump.
+    private func spread(_ position: [Int: (x: Int, y: Int)], from previous: [Int: (x: Int, y: Int)], now: Double) {
+        let common = position.keys.filter { previous[$0] != nil }
+        guard common.count >= 3 else { return }
+        func size(_ fingers: [Int: (x: Int, y: Int)]) -> Double {
+            let points = common.map { (x: Double(fingers[$0]!.x), y: Double(fingers[$0]!.y)) }
+            let cx = points.map(\.x).reduce(0, +) / Double(points.count), cy = points.map(\.y).reduce(0, +) / Double(points.count)
+            return points.map { hypot($0.x - cx, $0.y - cy) }.reduce(0, +) / Double(points.count)
         }
-        let least = min(range.least, spread), most = max(range.most, spread)
-        spreadRange = (range.fingers, least, most, range.moved)
+        let travel = (spreadTravel?.now ?? 0) + size(position) - size(previous)
+        let range = spreadTravel ?? (0, 0, 0, nil)
+        let least = min(range.least, travel), most = max(range.most, travel)
+        spreadTravel = (travel, least, most, range.moved)
+        guard touchMaxFingers >= 4 else { return }
         let settings = Settings.shared
         // Asked each time: clicking the desktop or opening an app also brings the windows back. Only once a
         // spread or pinch is far enough, since asking the window server takes ~1 ms.
         func desktopShown() -> Bool {
             desktopToggle.map { now - $0.at < 0.35 ? $0.shown : Actions.showingDesktop } ?? Actions.showingDesktop
         }
-        if spread - least >= Self.spreadDistance && range.moved != true {
+        if travel - least >= Self.spreadDistance && range.moved != true {
             swiped = true
-            spreadRange = (position.count, spread, spread, true)
+            spreadTravel = (travel, travel, travel, true)
             let action = settings.gestureAction(for: .fourFingerSpread)
             guard !(action == .showDesktop && desktopShown()) else { return }
             if action == .showDesktop { desktopToggle = (true, now) }
-            log.info("spread: \(position.count, privacy: .public) fingers, \(least, privacy: .public) → \(spread, privacy: .public) → \(action.rawValue, privacy: .public)")
+            log.info("spread: \(self.touchMaxFingers, privacy: .public) fingers, +\(travel - least, privacy: .public) → \(action.rawValue, privacy: .public)")
             Actions.perform(action, app: settings.apps[Gesture.fourFingerSpread.rawValue])
-        } else if most - spread >= Self.spreadDistance && range.moved != false {
+        } else if most - travel >= Self.spreadDistance && range.moved != false {
             swiped = true
-            spreadRange = (position.count, spread, spread, false)
+            spreadTravel = (travel, travel, travel, false)
             if desktopShown() {
                 desktopToggle = (false, now)
-                log.info("pinch: \(position.count, privacy: .public) fingers, \(most, privacy: .public) → \(spread, privacy: .public) → windows back")
+                log.info("pinch: \(self.touchMaxFingers, privacy: .public) fingers, -\(most - travel, privacy: .public) → windows back")
                 Actions.perform(GestureAction.showDesktop)
             } else {
                 let action = settings.gestureAction(for: .fourFingerPinch)
                 if action == .showDesktop { desktopToggle = (true, now) }
-                log.info("pinch: \(position.count, privacy: .public) fingers, \(most, privacy: .public) → \(spread, privacy: .public) → \(action.rawValue, privacy: .public)")
+                log.info("pinch: \(self.touchMaxFingers, privacy: .public) fingers, -\(most - travel, privacy: .public) → \(action.rawValue, privacy: .public)")
                 Actions.perform(action, app: settings.apps[Gesture.fourFingerPinch.rawValue])
             }
         }
