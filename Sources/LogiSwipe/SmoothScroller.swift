@@ -17,8 +17,11 @@ final class SmoothScroller {
     private static let pixelsPerUnit = 6.0
     /// Finger speed (units/s) at which each unit scrolls twice as far.
     private static let accelerationSpeed = 150.0
-    /// Units the finger must move before scrolling starts, so clicks don't scroll.
-    static let deadZone = 2.0
+    /// Units the fingers must move within `deadZoneTime` seconds before scrolling starts, so
+    /// clicks and resting fingers don't scroll. Fingers resting while the mouse moves jitter
+    /// ±0.5 units back and forth, adding up to 2.5 units over a touch but at most 2.1 within
+    /// 0.3 s; slow scrolls move 0.5–2 units every report and pass 3 within 0.05–0.15 s.
+    static let deadZone = 3.0, deadZoneTime = 0.3
     /// Momentum keeps this fraction of its speed every 1/60 s, and stops below `momentumStop` px/s.
     private static let momentumDecay = 0.95, momentumStop = 30.0
 
@@ -33,7 +36,7 @@ final class SmoothScroller {
     private var free = false                         // the current touch scrolls freely
     private var start: Double?                       // system uptime when the touch began
     private var last = 0.0                           // system uptime of the previous report
-    private var travel = Vector()                    // finger units moved before scrolling started
+    private var recent: [(time: Double, units: Vector)] = []  // movement before scrolling started
     private var remainder = Vector()                 // sub-pixel scroll not posted yet
     private var velocity = Vector()                  // px/s, smoothed
     private var momentum: (timer: Timer, velocity: Vector, time: Double, started: Bool)?
@@ -45,14 +48,17 @@ final class SmoothScroller {
         if start != nil && free != self.free { lift() }  // a finger landed and changed the kind of scroll
         guard let start else {
             stopMomentum()  // a new touch catches the page, as on a trackpad
-            self.start = now; last = now; travel = Vector(); self.free = free
+            self.start = now; last = now; recent = []; self.free = free
             return
         }
         let dt = now - last
         last = now
 
         guard let axis else {
-            travel = travel + Vector(x: dx, y: dy)
+            recent.append((now, Vector(x: dx, y: dy)))
+            recent.removeAll { now - $0.time > Self.deadZoneTime }
+            let travel = recent.reduce(Vector()) { $0 + $1.units }
+            let start = recent.first?.time ?? start
             if free {
                 // A second finger may still be landing on its way to a three-finger swipe.
                 if touchAge >= T630.oneFingerDelay && travel.length >= Self.deadZone {
