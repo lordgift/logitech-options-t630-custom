@@ -87,14 +87,18 @@ final class EventTap: ObservableObject {
 
     private func click(_ event: CGEvent) -> CGEvent? {
         let t630 = T630.shared
-        // Left or right from where the clicking finger is, rather than the mouse's own guess;
-        // fall back to the mouse when no finger position is known. A finger resting on the
-        // mouse while another clicks doesn't make it a two-finger click.
-        let x = t630.pressX, y = t630.pressY
-        let kind: ClickKind = t630.fingersLandedTogether ? .twoFinger
-            : T630.middleZoneX.contains(x) ? .middle
-            : x >= 0 ? (x >= T630.rightSideX ? .right : .left)
-            : event.type == .rightMouseDown ? .right : .left
+        // Left, middle or right from where the clicking finger is, rather than the mouse's own
+        // guess; fall back to the mouse when no finger position is known. A finger resting on the
+        // mouse while another clicks doesn't make it a two-finger click. With several fingers on
+        // the mouse, the clicking one is the latest to land on the side the mouse pressed: a
+        // finger resting on the right that landed after the clicking one on the left made left
+        // clicks right ones. The mouse picks its side well enough for that, though not for a
+        // single finger near the middle.
+        let side: ClickKind = event.type == .rightMouseDown ? .right : .left
+        let finger = t630.touching.last { T630.zone($0.x) != (side == .left ? .right : .left) }
+            ?? t630.touching.last
+        let x = finger?.x ?? -1, y = finger?.y ?? -1
+        let kind: ClickKind = t630.fingersLandedTogether ? .twoFinger : finger.map { T630.zone($0.x) } ?? side
         let action = Settings.shared.clickAction(for: kind)
         log.info("click: \(String(describing: kind), privacy: .public) at \(x, privacy: .public),\(y, privacy: .public), \(t630.fingers, privacy: .public) fingers → \(action.rawValue, privacy: .public)")
         heldAction = action

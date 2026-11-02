@@ -27,10 +27,18 @@ final class T630: ObservableObject {
     /// A press in the center, from top to bottom, is a middle click. Measured: middle clicks at X 34–48
     /// (the mouse itself called some right clicks); left clicks at X 6–43, so left clicks there are middle.
     static let middleZoneX = 30...55
+
+    /// The click a finger pressing at this X makes.
+    static func zone(_ x: Int) -> ClickKind {
+        middleZoneX.contains(x) ? .middle : x >= rightSideX ? .right : .left
+    }
     /// The last two fingers must land within this many seconds of each other for a click to be a
     /// two-finger click; otherwise one is resting on the mouse while the other clicks.
     /// Measured: two-finger clicks land 0.01–0.08 s apart.
     static let twoFingerClickWindow = 0.25
+    /// And press within this many seconds of the second landing; two fingers set down together
+    /// and left resting longer are a finger resting while the other clicks (seen at 2 s).
+    static let twoFingerClickWait = 1.0
     /// A tap is a touch without a press that lifts within this many seconds and moves at most
     /// `tapTravel` X/Y units. Measured: taps last 0.06–0.35 s and travel 1 unit at most.
     static let tapDuration = 0.4, tapTravel = 4.0
@@ -56,9 +64,8 @@ final class T630: ObservableObject {
     // Current touch.
     private(set) var fingers = 0           // fingers on the surface now
     private(set) var touchMaxFingers = 0   // most fingers seen since the touch began
-    /// The finger that landed last, which is the one clicking when another rests on the mouse.
-    private(set) var pressX = -1           // -1 when nothing touches
-    private(set) var pressY = -1
+    /// The fingers on the mouse, in the order they landed.
+    private(set) var touching: [(x: Int, y: Int)] = []
     /// Whether the last two fingers landed together, as in a two-finger click.
     private(set) var fingersLandedTogether = false
     /// Whether the latest report has a button down, so the fingers of the current click are known.
@@ -203,11 +210,10 @@ final class T630: ObservableObject {
         let now = ProcessInfo.processInfo.systemUptime
         landed = position.keys.reduce(into: [:]) { $0[$1] = landed[$1] ?? now }
         let order = position.keys.sorted { (landed[$0]!, $0) < (landed[$1]!, $1) }
-        let pressing = order.last.map { position[$0]! }
-        pressX = pressing?.x ?? -1
-        pressY = pressing?.y ?? -1
+        touching = order.map { position[$0]! }
         fingersLandedTogether = order.count >= 2
             && landed[order[order.count - 1]]! - landed[order[order.count - 2]]! <= Self.twoFingerClickWindow
+            && now - landed[order[order.count - 1]]! <= Self.twoFingerClickWait
         let pressed = buttonsDown && !pressReported
         pressReported = buttonsDown
         if pressed { EventTap.shared.fingersReported() }
