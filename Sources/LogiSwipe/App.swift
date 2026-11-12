@@ -104,7 +104,10 @@ struct SettingsView: View {
         .padding(Self.spacing)
         .frame(width: 680)
         .fixedSize(horizontal: false, vertical: true)
-        .onAppear { t630.readBattery() }
+        // The menu's window is made once and kept, so onAppear fires only the first time it opens.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            t630.readBattery()
+        }
         .modifier(GlassPanel())
     }
 

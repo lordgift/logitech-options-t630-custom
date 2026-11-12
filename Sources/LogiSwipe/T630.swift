@@ -135,11 +135,22 @@ final class T630: ObservableObject {
     private func deviceConnected() {
         connected = true
         // The event service shows up a moment after the HID device, and macOS applies the
-        // system tracking speed to it when it does.
+        // system tracking speed to it when it does. Right after a Bluetooth reconnect the mouse
+        // can also fail to answer the battery request, so ask again then.
         for delay in [0.5, 2.0] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { self.findServices() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                self.findServices()
+                if self.battery == nil { self.readBattery() }
+            }
+        }
+        // The mouse sends its battery report only now and then, so keep asking while it is connected.
+        batteryTimer?.invalidate()
+        batteryTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] timer in
+            guard let self, self.connected else { return timer.invalidate() }
+            self.readBattery()
         }
     }
+    private var batteryTimer: Timer?
 
     /// Whether an event came from the T630. After a reconnect its event service can show up
     /// later than `deviceConnected` looks, so a sender seen for the first time is looked up.
@@ -157,9 +168,11 @@ final class T630: ObservableObject {
         for device in devices {
             var report: [UInt8] = [3, 0]
             var length = report.count
-            if IOHIDDeviceGetReport(device, kIOHIDReportTypeInput, 3, &report, &length) == kIOReturnSuccess,
-               length >= 2 {
+            let result = IOHIDDeviceGetReport(device, kIOHIDReportTypeInput, 3, &report, &length)
+            if result == kIOReturnSuccess, length >= 2 {
                 battery = Int(report[1])
+            } else {
+                log.error("battery read failed: \(String(format: "0x%X", result), privacy: .public)")
             }
         }
     }

@@ -39,7 +39,7 @@ The T630 (`0x046D:0xB00D`) sends touch data on report ID `2`:
 - `report[8]` = Finger presence bitmask (`bit 0` = slot 0, `bit 1` = slot 1, etc.; `0` when no fingers touch)
 - `report[9...]` = 4 bytes per active finger slot in bit order: `X, Y, ?, ?` where `X` ranges roughly `0...76` across the surface width.
 
-Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `report[1]` = percent `0...100`. macOS doesn't surface it, so `T630.readBattery()` requests it with `IOHIDDeviceGetReport` on connect and whenever the menu opens, and `handle` picks up any report 3 the mouse sends on its own.
+Report ID `3` is Battery Strength (Generic Device Controls usage `0x20`): `report[1]` = percent `0...100`. macOS doesn't surface it, so `T630.readBattery()` requests it with `IOHIDDeviceGetReport` on connect (again 0.5 s and 2 s later while it is unknown: right after a Bluetooth reconnect the request can fail), every 5 minutes, and whenever the menu's window becomes key (the window is kept, so `onAppear` fires only once), and `handle` picks up any report 3 the mouse sends on its own.
 
 ### 2. Click Classification (`T630.swift` & `EventTap.swift`)
 - **Two-finger click**: A physical click (`leftMouseDown` or `rightMouseDown`) while the last two fingers landed within `T630.twoFingerClickWindow` (0.25 s) of each other, and the press came within `twoFingerClickWait` (1 s) of the second landing (`fingersLandedTogether`). Measured two-finger clicks land 0.01–0.08 s apart. A finger that has been resting on the mouse while another clicks doesn't count, so that is a one-finger click; so are two fingers set down together and left resting (seen pressing 2 s later). The T630 has no tap-to-click: a touch without pressing the switch never sends a button.
