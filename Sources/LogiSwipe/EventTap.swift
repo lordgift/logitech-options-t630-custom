@@ -101,6 +101,13 @@ final class EventTap: ObservableObject {
         let kind: ClickKind = t630.fingersLandedTogether ? .twoFinger : finger.map { T630.zone($0.x) } ?? side
         let action = Settings.shared.clickAction(for: kind)
         log.info("click: \(String(describing: kind), privacy: .public) at \(x, privacy: .public),\(y, privacy: .public), \(t630.fingers, privacy: .public) fingers → \(action.rawValue, privacy: .public)")
+        if t630.touching.count >= 2 {
+            // How the fingers landed, to tell two-finger clicks from a finger resting beside the clicking one.
+            let landings = t630.landings, now = ProcessInfo.processInfo.systemUptime
+            let fingers = t630.touching.map { "\($0.x),\($0.y)" }.joined(separator: " ")
+            let gap = landings[landings.count - 1] - landings[landings.count - 2]
+            log.info("click fingers: \(fingers, privacy: .public), last two landed \(gap, format: .fixed(precision: 2), privacy: .public) s apart, pressed \(now - landings[landings.count - 1], format: .fixed(precision: 2), privacy: .public) s later, \(event.type == .rightMouseDown ? "right" : "left", privacy: .public) button")
+        }
         heldAction = action
         let hold = Settings.shared.middleClickHold
         if kind == .middle && hold != .none {

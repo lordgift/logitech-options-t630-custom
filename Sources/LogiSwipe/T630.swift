@@ -66,6 +66,8 @@ final class T630: ObservableObject {
     private(set) var touchMaxFingers = 0   // most fingers seen since the touch began
     /// The fingers on the mouse, in the order they landed.
     private(set) var touching: [(x: Int, y: Int)] = []
+    /// When each of them landed (system uptime), in the same order.
+    private(set) var landings: [Double] = []
     /// Whether the last two fingers landed together, as in a two-finger click.
     private(set) var fingersLandedTogether = false
     /// Whether the latest report has a button down, so the fingers of the current click are known.
@@ -224,6 +226,7 @@ final class T630: ObservableObject {
         landed = position.keys.reduce(into: [:]) { $0[$1] = landed[$1] ?? now }
         let order = position.keys.sorted { (landed[$0]!, $0) < (landed[$1]!, $1) }
         touching = order.map { position[$0]! }
+        landings = order.map { landed[$0]! }
         fingersLandedTogether = order.count >= 2
             && landed[order[order.count - 1]]! - landed[order[order.count - 2]]! <= Self.twoFingerClickWindow
             && now - landed[order[order.count - 1]]! <= Self.twoFingerClickWait
