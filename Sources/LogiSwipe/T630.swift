@@ -97,8 +97,9 @@ final class T630: ObservableObject {
     /// The state Show Desktop was just switched to, used for 0.35 s until WindowManager's overlay window catches up.
     private var desktopToggle: (shown: Bool, at: Double)?
 
-    private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+    private var manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     private var devices = Set<IOHIDDevice>()  // with an input report callback registered
+    private var buffers: [UnsafeMutablePointer<UInt8>] = []  // their report buffers
 
     func start() {
         IOHIDManagerSetDeviceMatching(manager, [kIOHIDVendorIDKey: Self.vendor,
@@ -107,7 +108,8 @@ final class T630: ObservableObject {
             // Matching fires again when the manager is reopened after a failed open.
             guard T630.shared.devices.insert(device).inserted else { return }
             let size = max(IOHIDDeviceGetProperty(device, kIOHIDMaxInputReportSizeKey as CFString) as? Int ?? 64, 1)
-            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)  // lives as long as the device
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)  // lives until the next reload
+            T630.shared.buffers.append(buffer)
             IOHIDDeviceRegisterInputReportCallback(device, buffer, size, { _, _, _, _, _, report, length in
                 T630.shared.handle(report, length)
             }, nil)
@@ -121,6 +123,29 @@ final class T630: ObservableObject {
         }, nil)
         IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
         open()
+    }
+
+    /// Lets go of the mouse and opens it again, for when macOS stops handing over its reports though
+    /// it stays connected (seen for some minutes: clicks came with no fingers and the battery request
+    /// failed with kIOReturnNotPermitted, also in another process). With a new manager, as reopening
+    /// the old one doesn't match the mouse again.
+    func reload() {
+        log.info("reloading")
+        IOHIDManagerUnscheduleFromRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
+        IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        devices = []
+        buffers.forEach { $0.deallocate() }
+        buffers = []
+        connected = false
+        battery = nil
+        senderIDs = []
+        otherSenders = []
+        // End the touch, as two empty reports from the mouse would (the first may count as a stray one).
+        var empty = [UInt8](repeating: 0, count: 9)
+        empty[0] = 2
+        for _ in 0..<2 { handle(&empty, empty.count) }
+        start()
     }
 
     /// Needs Input Monitoring; keeps retrying until it is granted.

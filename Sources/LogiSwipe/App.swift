@@ -90,6 +90,8 @@ struct SettingsView: View {
     @ObservedObject var permissions: Permissions
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var confirmRestore = false
+    @State private var reloadAngle = 0.0  // the reload button's arrow, in degrees
+    @State private var reloadTurns = 0    // how many times it has turned for this reload; 0 when done
 
     // Two columns of cards, like Control Center's modules, so the panel fits on screen without scrolling.
     var body: some View {
@@ -123,10 +125,34 @@ struct SettingsView: View {
 
     private static let spacing = 14.0
 
+    /// Turns the reload button's arrow once, and again until the mouse is back, 5 times at most.
+    private func spinReload() {
+        reloadTurns += 1
+        withAnimation(.linear(duration: Self.reloadTurn)) { reloadAngle += 360 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.reloadTurn) {
+            if t630.connected || reloadTurns >= 5 { reloadTurns = 0 } else { spinReload() }
+        }
+    }
+    private static let reloadTurn = 0.8  // seconds
+
     private var statusSection: some View {
         Card {
             Toggle("Enabled", isOn: $settings.enabled)
-            LabeledContent("T630", value: t630.connected ? "Connected" : "Not connected")
+            LabeledContent("T630") {
+                HStack {
+                    Text(reloadTurns > 0 ? "Reconnecting…" : t630.connected ? "Connected" : "Not connected")
+                    Button {
+                        t630.reload()
+                        spinReload()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .rotationEffect(.degrees(reloadAngle))
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(reloadTurns > 0)
+                    .help("Reconnect to the mouse, if gestures stop working")
+                }
+            }
             if t630.connected, let battery = t630.battery {
                 LabeledContent("Battery") {
                     // battery.0percent … battery.100percent, nearest quarter
