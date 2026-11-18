@@ -17,7 +17,7 @@ struct LogiSwipeApp: App {
 }
 
 /// A mouse outline that fills from the bottom with the T630's battery level, faded while the level is unknown
-/// and red below `NSImage.lowBattery` percent.
+/// and red at `NSImage.lowBattery` percent or lower.
 struct MenuBarIcon: View {
     @ObservedObject var t630: T630
 
@@ -27,14 +27,14 @@ struct MenuBarIcon: View {
 }
 
 extension NSImage {
-    /// Below this battery percent the level is drawn in red.
+    /// At this battery percent or lower the level is drawn in red.
     static let lowBattery = 10
 
     /// An 18 pt template image, so the menu bar tints it for light and dark mode. A template is drawn
     /// in one color, so with a low battery it isn't one: the outline takes the menu bar's text color,
     /// read from the appearance it is drawn in, and the level is red.
     static func menuBarIcon(battery: Int?) -> NSImage {
-        let low = battery.map { $0 < lowBattery } ?? false
+        let low = battery.map { $0 <= lowBattery } ?? false
         let image = NSImage(size: NSSize(width: 12, height: 18), flipped: false) { _ in
             let stroke: CGFloat = 1.5, gap: CGFloat = 1
             let outline = NSRect(x: 0, y: 0, width: 12, height: 18).insetBy(dx: 0.5 + stroke / 2, dy: 0.5 + stroke / 2)
@@ -157,6 +157,8 @@ struct SettingsView: View {
                 LabeledContent("Battery") {
                     // battery.0percent … battery.100percent, nearest quarter
                     Label("\(battery)%", systemImage: "battery.\(min(100, (battery + 12) / 25 * 25))percent")
+                        // Red when low, as the menu bar icon.
+                        .foregroundStyle(battery <= NSImage.lowBattery ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                 }
             }
             permissionRow("Input Monitoring", allowed: permissions.inputMonitoring, pane: "Privacy_ListenEvent")

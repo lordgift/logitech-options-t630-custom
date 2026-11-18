@@ -31,7 +31,7 @@ Click the mouse icon in the menu bar. Settings only apply to the T630. Other mic
 
 | Feature / Setting | Options | Default |
 |---|---|---|
-| **Battery level** | Shown in the menu bar icon and settings panel; the icon fills red below 10% | — |
+| **Battery level** | Shown in the menu bar icon and settings panel; the icon fills red at 10% or lower | — |
 | **Custom tracking speed** | `0.0` – `6.0`, marked at macOS's fastest, "Fast" (`3.0`) | On, starting at your system speed |
 | **Smooth scrolling** | Trackpad-style scrolling with momentum (`0.25×` – `3×` speed) | On (`1×`) |
 | **Reverse scroll direction** | Flips Natural scrolling for the T630 only | Off |
